@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shuffle Text Effect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #555;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+        .char {
+            display: inline-block;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+<!-- SOURCE: https://kawai-text-animation.pages.dev -->
+    <div id="anim-container"></div>
+    <script>
+        const text = "Hello World! Hello Cybernauts and Netizens!";
+        const container = document.getElementById('anim-container');
+        const symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*ячёсмитьвюЯЧЁСМИТЬВЮйыбөахролдпЙЫБӨАХРОЛДПфцужэнгшүзкеФЦУЖЭНГШҮЗКЕ()';
+        
+        function play() {
+            container.innerHTML = '';
+            const chars = text.split('');
+            const spanList = chars.map(c => {
+                const span = document.createElement('span');
+                span.className = 'char';
+                container.appendChild(span);
+                return { el: span, char: c, isSpace: c === ' ' };
+            });
+            
+            let frame = 0;
+            function update() {
+                let allDone = true;
+                spanList.forEach((item, i) => {
+                    if (item.isSpace) { item.el.textContent = ' '; return; }
+                    const startFrame = i * 2;
+                    const endFrame = startFrame + 15;
+                    if (frame < startFrame) {
+                        allDone = false; item.el.textContent = '';
+                    } else if (frame < endFrame) {
+                        allDone = false; item.el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    } else {
+                        item.el.textContent = item.char;
+                    }
+                });
+                frame++;
+                if (!allDone) {
+                    setTimeout(() => requestAnimationFrame(update), 10);
+                } else {
+                    setTimeout(play, 2500);
+                }
+            }
+            update();
+        }
+        play();
+    </script>
+</body>
+</html>
