@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/images/favicon.png">
+    <title>Multi-Language HTML Translator Pro</title>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #f1f5f9; --accent: #3b82f6; --success: #42A785; --danger: #ef4444; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+        .app { display: flex; height: 100vh; padding: 15px; gap: 15px; box-sizing: border-box; }
+        .pane { flex: 1 1 50%; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; position: relative; min-width: 0; }
+        .header { padding: 10px 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
+        .title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
+        
+        .lang-select { background: #334155; color: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 12px; outline: none; cursor: pointer; }
+        .lang-select:hover { border-color: var(--accent); }
+
+        textarea { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #cbd5e1; font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6; resize: none; }
+        .btn { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
+        .btn-clear { background: #334155; color: white; }
+        .btn-clear:hover { background: var(--danger); }
+        .btn-copy { background: var(--accent); color: white; }
+        
+        .translate-btn { position: absolute; bottom: 25px; right: 25px; padding: 12px 24px; background: var(--success); color: white; border: none; border-radius: 50px; font-weight: 500; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; gap: 8px; }
+        .translate-btn:disabled { background: #475569; cursor: not-allowed; opacity: 0.8; }
+        
+        #progress { position: absolute; top: 0; left: 0; height: 3px; background: var(--success); width: 0%; transition: width 0.3s; }
+
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="pane">
+        <div class="header">
+            <span class="title">Source</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label style="font-size: 11px; color: #94a3b8;">Target Language:</label>
+                <select id="targetLang" class="lang-select">
+                    <option value="en">English</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="es">Spanish</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="it">Italian</option>
+                    <option value="uk">Ukrainian</option>
+                    <option value="he">Hebrew</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="mn">Mongolian</option>
+                </select>
+                <button class="btn btn-clear" onclick="clearFields()">Clear</button>
+            </div>
+        </div>
+        <textarea id="in" placeholder="HTML кодоо энд оруулна уу..."></textarea>
+        <button class="translate-btn" id="btn" onclick="startTranslation()">
+            <span id="btn-txt">TRANSLATE NOW</span>
+        </button>
+    </div>
+
+    <div class="pane">
+        <div id="progress"></div>
+        <div class="header">
+            <span class="title">Translated Result</span>
+            <button class="btn btn-copy" onclick="copyResult()">Copy Result</button>
+        </div>
+        <textarea id="out" readonly placeholder="Орчуулга энд гарна..."></textarea>
+    </div>
+</div>
+
+<script>
+    async function startTranslation() {
+        const input = document.getElementById('in').value.trim();
+        const target = document.getElementById('targetLang').value;
+        if (!input) return;
+
+        const btn = document.getElementById('btn');
+        const btnTxt = document.getElementById('btn-txt');
+        const pBar = document.getElementById('progress');
+        
+        btn.disabled = true;
+        btnTxt.innerText = "Processing...";
+
+        const doc = new DOMParser().parseFromString(input, 'text/html');
+        const textNodes = [];
+        const walk = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
+        let node;
+        
+        while(node = walk.nextNode()) {
+            if (node.textContent.trim().length > 1 && !node.parentElement.closest('script, style')) {
+                textNodes.push(node);
+            }
+        }
+
+        for (let i = 0; i < textNodes.length; i++) {
+            const percent = Math.round(((i + 1) / textNodes.length) * 100);
+            pBar.style.width = percent + "%";
+            btnTxt.innerText = `Translating ${percent}%...`;
+
+            try {
+                const text = textNodes[i].textContent.trim();
+                // Google Translate Free API - Target хэлийг динамикаар авна
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result && result[0]) {
+                    const translatedText = result[0].map(x => x[0]).join("");
+                    textNodes[i].textContent = translatedText;
+                }
+            } catch (e) {
+                console.error("Error at node:", i, e);
+            }
+        }
+
+        document.getElementById('out').value = doc.documentElement.innerHTML;
+        btn.disabled = false;
+        btnTxt.innerText = "Translate Now";
+        pBar.style.width = "0%";
+    }
+
+    function clearFields() {
+        document.getElementById('in').value = '';
+        document.getElementById('out').value = '';
+    }
+
+    function copyResult() {
+        const out = document.getElementById('out');
+        out.select();
+        document.execCommand('copy');
+        const b = document.querySelector('.btn-copy');
+        b.innerText = "Copied!";
+        setTimeout(() => b.innerText = "Copy Result", 2000);
+    }
+</script>
+
+</body>
+</html>
