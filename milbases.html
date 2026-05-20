@@ -65,23 +65,18 @@
     		background: rgba(10, 15, 20, 0.85);
     		border: 1px solid #333;
     		backdrop-filter: blur(5px);
-
     	/* Скроллдохгүй болгох тохиргоо: */
     		overflow: visible;         /* Доторх зүйл нь ил гарвал контейнер дагаж томорно */
     		height: auto;              /* Өндөр нь мөр нэмэгдэхэд автоматаар сунана */
     		width: fit-content;        /* Өргөн нь багана нэмэгдэхэд баруун тийш сунана */
-    		max-height: none;          /* Өндрийн дээд хязгаарыг цуцлах */
-		}
-		/* ХҮСНЭГТИЙН ФОНТ ХЭМЖЭЭ */
+    		max-height: none;          /* Өндрийн дээд хязгаарыг цуцлах */ }
 		#info-table {
     		border-collapse: collapse;
     		width: auto;				/* Хүснэгт 100% биш, зөвхөн баганын өргөнөөрөө байна */
     		color: #888;
     		font-size: 12px;			/* хүснэгтийн текстийг бүхэлд нь өөрчлөнө */
     		text-align: left;			/* хүснэгтийн текстийг бүгдийг аль нэг тал руу шахах */
-    		white-space: nowrap;		/* Текстүүдийг доошоо таслахгүй, баруун тийш цувуулна */
-		}
-            
+    		white-space: nowrap;		/* Текстүүдийг доошоо таслахгүй, баруун тийш цувуулна */ }
         #info-table th { 
 			background: #1a1a1a;
 			padding: 5px;
@@ -90,48 +85,19 @@
 			border: 1px solid #222;
 			font-size: 12px;
 			color: #888;
-			font-weight: bold;
-		}
+			font-weight: bold; }
         #info-table td { border: 1px solid #222; padding: 4px; }
-
 
 		#data-table-container {
 			/* ... бусад кодууд ... */
-			display: block; /* "display: none" хүснэгт нууна, "display: block" хүснэгт ил гаргана */
-		}
-
-
-
+			display: block; /* "display: none" хүснэгт нууна, "display: block" хүснэгт ил гаргана */ }
 
         /* Баруун доод цаг */
         #central-clock-container {
             position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-            color: #888; text-align: right;
-        }
+            color: #888; text-align: right; }
         .clock-value { font-size: 32px; font-weight: thin; color: #fff; line-height: 1; }
         .clock-label { font-size: 12px; font-weight: thin; color: #fff; margin-top: 5px; letter-spacing: 2px; }
-		
-		
-		
-		
-		/* Зургийг тогтмол байрлуулах класс */
-.fix-bottom-center-image {
-    position: fixed;            /* Дэлгэц дээр тогтмол байрлуулна */
-    bottom: 20px;               /* Доод ирмэгээс 20px зай авна */
-    left: 68%;                  /* Зүүн талаас 50% зай авна (голд) */
-    transform: translateX(-50%); /* Зургийн төвийг дэлгэцийн төвд тааруулна */
-    z-index: 1000;              /* Газрын зураг болон бусад элементийн дээр харагдуулна */
-    max-width: 15%;             /* Хэт том харагдахаас сэргийлж, хэмжээг нь хязгаарлав */
-    height: auto;               /* Өндрийг нь автоматаар тохируулна */
-    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Үл ялиг сүүдэр нэмж ялгав */
-    border-radius: 4px;         /* Буланг нь дугуйлав */
-    pointer-events: none;       /* Зургийн дээр дарахад газрын зурагт нөлөөлөхгүй */
-}
-		
-		
-		
-		
-		
 		
 		/* Текст блок байрлуулах */
 .fix-bottom-left-text {
@@ -177,9 +143,6 @@
 <body>
 
 
-
-
-
 <div id="data-table-container">
     <table id="info-table">
         <thead><tr id="table-header"></tr></thead>
@@ -220,11 +183,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@joergdietrich/leaflet.terminator"></script>
-
 <script>
-
-
-
 
 	// 1. MAP Газрын зураг
     const map = L.map('map', {
