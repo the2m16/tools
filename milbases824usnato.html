@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>us824nato</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #0b0e14; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+
+
+
+
+
+		/* Цагийн бүсийн шошго - 3 эгнээ */
+		.tz-dynamic-label {
+			background: rgba(10, 15, 20, 0.04); /* Хайрцагны арын өнгө (тунгалаг хар) */
+			border: 0px solid #fff;             /* Хүрээний зузаан (0 тул харагдахгүй) */
+			color: #fff;                        /* Бичвэрийн үндсэн өнгө (цагаан) */
+			padding: 2px 8px;                   /* Дотор талын зай (Дээд-доод, Баруун-зүүн) */
+			font-size: 10px;                    /* Үндсэн фонтны хэмжээ */
+			border-radius: 2px;                 /* Булангийн бөөрөнхий ирмэг */
+			text-align: center;                 /* Бичвэрийг голлуулах */
+			display: flex;                      /* Уян хатан бүтэц ашиглах */
+			flex-direction: column;             /* Мөрүүдийг дээр дээрээс нь өрөх */
+			align-items: center;                /* Мөрүүдийг хэвтээ тэнхлэгт голлуулах */
+			min-width: 55px;                    /* Хайрцагны хамгийн бага өргөн */
+			transform: translateX(-50%);        /* Байршлыг өөрийнх нь өргөнөөр голлуулж шилжүүлэх */
+			backdrop-filter: blur(4px);         /* Ар талын nền-ийг бүрсийлгэх (шил шиг эффект) */
+			gap: -2px;                          /* Мөр хоорондын зайг хасах утгаар ойртуулах */
+		}
+
+		.tz-row-utc { 
+			color: #eedc83;                     /* UTC бичвэрийн өнгө (шар) */
+			font-size: 10px;                    /* UTC фонтны хэмжээ */
+			line-height: 1.0;                   /* Мөрийн өндрийг шахаж зайг устгах */
+		}
+
+		.tz-row-date { 
+			color: #f2f2f2;                     /* Огнооны өнгө (цайвар саарал) */
+			font-size: 12px;                    /* Огнооны фонтны хэмжээ */
+			margin: 0;                          /* Гадна талын зайг бүрэн устгах */
+			line-height: 1.0;                   /* Мөрийн өндрийг шахаж зайг устгах */
+		}
+
+		.tz-row-time { 
+			font-weight: normal;                /* Фонтны зузаан (normal = 400) */
+			font-size: 12px;                    /* Цагны фонтны хэмжээ (хамгийн том) */
+			color: #5F98D8;                     /* Цагны өнгө (цэнхэр) */
+			line-height: 1.0;                   /* Мөрийн өндрийг шахаж зайг устгах */
+		}
+
+
+
+
+
+
+        /* Зүүн доод хүснэгт */
+        #data-table-container {
+    		position: absolute;
+    		bottom: 10px;
+    		left: 10px;
+    		z-index: 2000;
+    		background: rgba(10, 15, 20, 0.85);
+    		border: 1px solid #333;
+    		backdrop-filter: blur(5px);
+
+    	/* Скроллдохгүй болгох тохиргоо: */
+    		overflow: visible;         /* Доторх зүйл нь ил гарвал контейнер дагаж томорно */
+    		height: auto;              /* Өндөр нь мөр нэмэгдэхэд автоматаар сунана */
+    		width: fit-content;        /* Өргөн нь багана нэмэгдэхэд баруун тийш сунана */
+    		max-height: none;          /* Өндрийн дээд хязгаарыг цуцлах */
+		}
+		/* ХҮСНЭГТИЙН ФОНТ ХЭМЖЭЭ */
+		#info-table {
+    		border-collapse: collapse;
+    		width: auto;				/* Хүснэгт 100% биш, зөвхөн баганын өргөнөөрөө байна */
+    		color: #cccccc;
+    		font-size: 11px;			/* хүснэгтийн текстийг бүхэлд нь өөрчлөнө */
+    		text-align: left;			/* хүснэгтийн текстийг бүгдийг аль нэг тал руу шахах */
+    		white-space: nowrap;		/* Текстүүдийг доошоо таслахгүй, баруун тийш цувуулна */
+		}
+            
+        #info-table th { 
+			background: #1a1a1a;
+			padding: 5px;
+			position: sticky;
+			top: 0;
+			border: 1px solid #222;
+			font-size: 11px;
+			color: #cccccc;
+			font-weight: bold;
+		}
+        #info-table td { border: 1px solid #222; padding: 4px; }
+
+
+		#data-table-container {
+			/* ... бусад кодууд ... */
+			display: block; /* "display: none" хүснэгт нууна, "display: block" хүснэгт ил гаргана */
+		}
+
+
+
+
+        /* Баруун доод цаг */
+        #central-clock-container {
+            position: absolute; bottom: 10px; right: 10px; z-index: 1000;
+            color: #999999; font-size: 12px; text-align: right;
+        }
+        .clock-value { font-size: 24px; font-weight: thin; color: #fff; line-height: 1; }
+        .clock-label { font-size: 11px; font-weight: thin; color: #fff; margin-top: 5px; letter-spacing: 2px; }
+		
+		
+		
+    </style>
+</head>
+<body>
+
+
+
+
+
+<div id="data-table-container">
+    <table id="info-table">
+        <thead><tr id="table-header"></tr></thead>
+        <tbody id="table-body"></tbody>
+    </table>
+</div>
+
+<div id="central-clock-container">
+    <div id="hud-date">--.--.----</div>
+    <div id="hud-day">---</div>
+    <!-- <div class="clock-label">LOCAL TIME</div> -->
+    <div id="hud-time" class="clock-value">00:00</div>
+</div>
+
+
+
+
+<div id="map"></div>
+
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@joergdietrich/leaflet.terminator"></script>
+
+<script>
+
+
+
+	// 1 А. Газрын зураг MAP үүсгэх
+    const map = L.map('map', {
+        center: [20, 18], zoom: 1, minZoom: 4,
+		zoomControl: false, attributionControl: false, worldCopyJump: true
+    });
+
+
+
+
+	// 1 Б. Газрын зургийн суурь (Tile Layer) нэмэх
+	L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); // шөнийн зураг максзүүм20, дата анализ зориулалттай
+	// L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map); // өдрийн зураг, цэнхэр далай
+	// L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); // өдрийн зураг, саарал далай, мэдээллийн график зориулалттай
+	// L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}').addTo(map); // гол усны зураг максзүүм13
+	// L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}').addTo(map); //газрын рельеф максзүүм13
+	// L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png').addTo(map); // газар орны нэр
+	// L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}').addTo(map); // АНУ автозамын сүлжээ
+	// маш олон леирсийн библиотек. Кодыг хуулж энд тавьж ашиглаж болно: https://leaflet-extras.github.io/leaflet-providers/preview/
+	// L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map); // сансрын зураг
+
+
+	// 2. SHADOW Нарны сүүдэр
+    let terminator = L.terminator({ fillOpacity: 0.3, color: '#ffffff', weight: 0.1 }).addTo(map);
+
+    
+    
+    // 3. US824Bases
+//АНУ цэргийн томоохон баазууд
+const usaStrategicBases = [
+// --- NORTHCOM (Аляск) ---
+{ name: "US: Joint Base Elmendorf-Richardson", lat: 61.2294, lon: -149.7297, cmd: "NORTHCOM" },
+{ name: "US: Eielson Air Force Base", lat: 64.6656, lon: -147.1014, cmd: "NORTHCOM" },
+{ name: "US: Fort Wainwright", lat: 64.8439, lon: -147.6334, cmd: "NORTHCOM" },
+{ name: "US: Fort Greely", lat: 63.9850, lon: -145.7100, cmd: "NORTHCOM" },
+{ name: "US: Clear Space Force Station", lat: 64.2906, lon: -149.1886, cmd: "NORTHCOM" },
+{ name: "US: Coast Guard Base Kodiak", lat: 57.7511, lon: -152.5122, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Баруун эрэг ба Төв муж) ---
+{ name: "US: Joint Base Lewis-McChord, WA", lat: 47.1034, lon: -122.4917, cmd: "NORTHCOM" },
+{ name: "US: Fairchild Air Force Base, WA", lat: 47.6151, lon: -117.6558, cmd: "NORTHCOM" },
+{ name: "US: Naval Base Kitsap, WA", lat: 47.7314, lon: -122.7149, cmd: "NORTHCOM" },
+{ name: "US: Malmstrom Air Force Base, MT", lat: 47.5036, lon: -111.1843, cmd: "NORTHCOM" },
+{ name: "US: Minot Air Force Base, ND", lat: 48.4157, lon: -101.3226, cmd: "NORTHCOM" },
+{ name: "US: Grand Forks AFB, ND", lat: 47.9611, lon: -97.4011, cmd: "NORTHCOM" },
+{ name: "US: Ellsworth Air Force Base, SD", lat: 44.1450, lon: -103.1036, cmd: "NORTHCOM" },
+{ name: "US: Hill Air Force Base, UT", lat: 41.1239, lon: -111.9731, cmd: "NORTHCOM" },
+{ name: "US: Beale Air Force Base, CA", lat: 39.1361, lon: -121.4361, cmd: "NORTHCOM" },
+{ name: "US: Travis Air Force Base, CA", lat: 38.2628, lon: -121.9331, cmd: "NORTHCOM" },
+{ name: "US: Edwards Air Force Base, CA", lat: 34.9056, lon: -117.8836, cmd: "NORTHCOM" },
+{ name: "US: Fort Irwin, CA", lat: 35.2472, lon: -116.6811, cmd: "NORTHCOM" },
+{ name: "US: Vandenberg Space Force Base, CA", lat: 34.7328, lon: -120.5681, cmd: "NORTHCOM" },
+{ name: "US: Naval Base San Diego, CA", lat: 32.6842, lon: -117.1211, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Base Camp Pendleton, CA", lat: 33.3644, lon: -117.4256, cmd: "NORTHCOM" },
+{ name: "US: Nelllis Air Force Base, NV", lat: 36.2361, lon: -115.0342, cmd: "NORTHCOM" },
+{ name: "US: Luke Air Force Base, AZ", lat: 33.5350, lon: -112.3831, cmd: "NORTHCOM" },
+{ name: "US: Davis-Monthan AFB, AZ", lat: 32.1664, lon: -110.8833, cmd: "NORTHCOM" },
+{ name: "US: Fort Huachuca, AZ", lat: 31.5547, lon: -110.3503, cmd: "NORTHCOM" },
+{ name: "US: Kirtland Air Force Base, NM", lat: 35.0403, lon: -106.6092, cmd: "NORTHCOM" },
+{ name: "US: Holloman Air Force Base, NM", lat: 32.8525, lon: -106.1064, cmd: "NORTHCOM" },
+{ name: "US: Cannon Air Force Base, NM", lat: 34.3828, lon: -103.3233, cmd: "NORTHCOM" },
+{ name: "US: Fort Bliss, TX", lat: 31.8488, lon: -106.4300, cmd: "NORTHCOM" },
+{ name: "US: Dyess Air Force Base, TX", lat: 32.4208, lon: -99.8547, cmd: "NORTHCOM" },
+{ name: "US: Fort Cavazos (Fort Hood), TX", lat: 31.1347, lon: -97.7797, cmd: "NORTHCOM" },
+{ name: "US: Joint Base San Antonio, TX", lat: 29.4442, lon: -98.4361, cmd: "NORTHCOM" },
+{ name: "US: Laughlin Air Force Base, TX", lat: 29.3589, lon: -100.7778, cmd: "NORTHCOM" },
+{ name: "US: US: Fort Riley, KS", lat: 39.0578, lon: -96.8192, cmd: "NORTHCOM" },
+{ name: "US: McConnell Air Force Base, KS", lat: 37.6258, lon: -97.2689, cmd: "NORTHCOM" },
+{ name: "US: Whiteman Air Force Base, MO", lat: 38.7256, lon: -93.5481, cmd: "NORTHCOM" },
+{ name: "US: Fort Leonard Wood, MO", lat: 37.7472, lon: -92.1583, cmd: "NORTHCOM" },
+{ name: "US: Offutt Air Force Base, NE", lat: 41.1181, lon: -95.9142, cmd: "NORTHCOM" },
+
+// --- INDOPACOM (Япон) ---
+{ name: "US: Yokota Air Base", lat: 35.7486, lon: 139.3485, cmd: "INDOPACOM" },
+{ name: "US: Misawa Air Base", lat: 40.7041, lon: 141.3686, cmd: "INDOPACOM" },
+{ name: "US: Kadena Air Base", lat: 26.3556, lon: 127.7678, cmd: "INDOPACOM" },
+{ name: "US: Camp Zama", lat: 35.4853, lon: 139.4089, cmd: "INDOPACOM" },
+{ name: "US: Yokosuka Naval Base", lat: 35.2931, lon: 139.6706, cmd: "INDOPACOM" },
+{ name: "US: Sasebo Naval Base", lat: 33.1611, lon: 129.7131, cmd: "INDOPACOM" },
+{ name: "US: Marine Corps Air Station Iwakuni", lat: 34.1439, lon: 132.2353, cmd: "INDOPACOM" },
+{ name: "US: Camp Courtney (Okinawa)", lat: 26.3911, lon: 127.8594, cmd: "INDOPACOM" },
+{ name: "US: Camp Foster (Okinawa)", lat: 26.2994, lon: 127.7789, cmd: "INDOPACOM" },
+{ name: "US: Camp Hansen (Okinawa)", lat: 26.4567, lon: 127.9158, cmd: "INDOPACOM" },
+
+// --- INDOPACOM (Өмнөд Солонгос) ---
+{ name: "US: Camp Humphreys", lat: 36.9675, lon: 127.0317, cmd: "INDOPACOM" },
+{ name: "US: Osan Air Base", lat: 37.0905, lon: 127.0304, cmd: "INDOPACOM" },
+{ name: "US: Kunsan Air Base", lat: 35.9242, lon: 126.6158, cmd: "INDOPACOM" },
+{ name: "US: Camp Casey", lat: 37.9136, lon: 127.0608, cmd: "INDOPACOM" },
+{ name: "US: Camp Walker", lat: 35.8425, lon: 128.5894, cmd: "INDOPACOM" },
+{ name: "US: Camp Carroll", lat: 35.9922, lon: 128.4239, cmd: "INDOPACOM" },
+{ name: "US: Chinhae Naval Base", lat: 35.1328, lon: 128.6497, cmd: "INDOPACOM" },
+
+// --- INDOPACOM (Бусад бүс) ---
+{ name: "US: Guam (Andersen AFB)", lat: 13.5786, lon: 144.9247, cmd: "INDOPACOM" },
+{ name: "US: Naval Base Guam", lat: 13.4334, lon: 144.6624, cmd: "INDOPACOM" },
+{ name: "US: Diego Garcia", lat: -7.3133, lon: 72.4111, cmd: "INDOPACOM" },
+{ name: "US: Joint Base Pearl Harbor-Hickam", lat: 21.3445, lon: -157.9410, cmd: "INDOPACOM" },
+{ name: "US: Schofield Barracks, HI", lat: 21.4939, lon: -158.0647, cmd: "INDOPACOM" },
+{ name: "US: Marine Corps Base Hawaii", lat: 21.4447, lon: -157.7602, cmd: "INDOPACOM" },
+{ name: "US: Pohakuloa Training Area, HI", lat: 19.7561, lon: -155.5539, cmd: "INDOPACOM" },
+{ name: "US: Barking Sands Missile Range", lat: 22.0225, lon: -159.7828, cmd: "INDOPACOM" },
+
+// --- NORTHCOM (Зүүн эрэг ба Өмнөд) ---
+{ name: "US: Fort Moore (Fort Benning), GA", lat: 32.3522, lon: -84.9688, cmd: "NORTHCOM" },
+{ name: "US: Fort Liberty (Fort Bragg), NC", lat: 35.1390, lon: -78.9991, cmd: "NORTHCOM" },
+{ name: "US: Fort Campbell, KY", lat: 36.6637, lon: -87.4673, cmd: "NORTHCOM" },
+{ name: "US: Fort Knox, KY", lat: 37.8921, lon: -85.9560, cmd: "NORTHCOM" },
+{ name: "US: Fort Stewart, GA", lat: 31.9377, lon: -81.6074, cmd: "NORTHCOM" },
+{ name: "US: Fort Drum, NY", lat: 44.0536, lon: -75.7600, cmd: "NORTHCOM" },
+{ name: "US: Fort Johnson (Fort Polk), LA", lat: 31.0453, lon: -93.2081, cmd: "NORTHCOM" },
+{ name: "US: Fort Eisenhower (Fort Gordon), GA", lat: 33.4211, lon: -82.1383, cmd: "NORTHCOM" },
+{ name: "US: Naval Station Norfolk, VA", lat: 36.9375, lon: -76.3021, cmd: "NORTHCOM" },
+{ name: "US: Naval Submarine Base New London, CT", lat: 41.3897, lon: -72.0864, cmd: "NORTHCOM" },
+{ name: "US: Naval Station Mayport, FL", lat: 30.3958, lon: -81.4294, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Pensacola, FL", lat: 30.3514, lon: -87.3175, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Jacksonville, FL", lat: 30.2358, lon: -81.6778, cmd: "NORTHCOM" },
+{ name: "US: Naval Construction Battalion Center, MS", lat: 30.3800, lon: -89.1200, cmd: "NORTHCOM" },
+{ name: "US: Joint Base Andrews, MD", lat: 38.8108, lon: -76.8670, cmd: "NORTHCOM" },
+{ name: "US: Joint Base McGuire-Dix-Lakehurst, NJ", lat: 40.0331, lon: -74.5233, cmd: "NORTHCOM" },
+{ name: "US: Joint Base Langley-Eustis, VA", lat: 37.0833, lon: -76.3603, cmd: "NORTHCOM" },
+{ name: "US: Joint Base Charleston, SC", lat: 32.8986, lon: -80.0403, cmd: "NORTHCOM" },
+{ name: "US: Joint Base Anacostia-Bolling, DC", lat: 38.8417, lon: -77.0167, cmd: "NORTHCOM" },
+{ name: "US: Seymour Johnson AFB, NC", lat: 35.3394, lon: -77.9606, cmd: "NORTHCOM" },
+{ name: "US: Shaw Air Force Base, SC", lat: 33.9728, lon: -80.4828, cmd: "NORTHCOM" },
+{ name: "US: Eglin Air Force Base, FL", lat: 30.4600, lon: -86.5500, cmd: "NORTHCOM" },
+{ name: "US: MacDill Air Force Base, FL", lat: 27.8494, lon: -82.5211, cmd: "NORTHCOM" },
+{ name: "US: Tyndall Air Force Base, FL", lat: 30.0694, lon: -85.5750, cmd: "NORTHCOM" },
+{ name: "US: Hurlburt Field, FL", lat: 30.4278, lon: -86.6892, cmd: "NORTHCOM" },
+{ name: "US: US: Patrick Space Force Base, FL", lat: 28.2353, lon: -80.6103, cmd: "NORTHCOM" },
+{ name: "US: Moody Air Force Base, GA", lat: 30.9678, lon: -83.1931, cmd: "NORTHCOM" },
+{ name: "US: Robins Air Force Base, GA", lat: 32.6400, lon: -83.5919, cmd: "NORTHCOM" },
+{ name: "US: Columbus Air Force Base, MS", lat: 33.6439, lon: -88.4439, cmd: "NORTHCOM" },
+{ name: "US: Keesler Air Force Base, MS", lat: 30.4111, lon: -88.9236, cmd: "NORTHCOM" },
+{ name: "US: Barksdale Air Force Base, LA", lat: 32.5008, lon: -93.6628, cmd: "NORTHCOM" },
+{ name: "US: Little Rock AFB, AR", lat: 34.9169, lon: -92.1494, cmd: "NORTHCOM" },
+{ name: "US: Altus Air Force Base, OK", lat: 34.6658, lon: -99.2667, cmd: "NORTHCOM" },
+{ name: "US: Tinker Air Force Base, OK", lat: 35.4147, lon: -97.3867, cmd: "NORTHCOM" },
+{ name: "US: Vance Air Force Base, OK", lat: 36.3392, lon: -97.9164, cmd: "NORTHCOM" },
+{ name: "US: Scott Air Force Base, IL", lat: 38.5453, lon: -89.8353, cmd: "NORTHCOM" },
+{ name: "US: Wright-Patterson AFB, OH", lat: 39.8264, lon: -84.0453, cmd: "NORTHCOM" },
+{ name: "US: Dover Air Force Base, DE", lat: 39.1294, lon: -75.4664, cmd: "NORTHCOM" },
+{ name: "US: Hanscom Air Force Base, MA", lat: 42.4700, lon: -71.2800, cmd: "NORTHCOM" },
+
+// --- EUCOM (Герман) ---
+{ name: "US: Ramstein Air Base", lat: 49.4447, lon: 7.5911, cmd: "EUCOM" },
+{ name: "US: Spangdahlem Air Base", lat: 49.9744, lon: 6.6919, cmd: "EUCOM" },
+{ name: "US: Baumholder Military Community", lat: 49.6481, lon: 7.3375, cmd: "EUCOM" },
+{ name: "US: Grafenwoehr Training Area", lat: 49.7153, lon: 11.9056, cmd: "EUCOM" },
+{ name: "US: Vilseck (Rose Barracks)", lat: 49.6331, lon: 11.7667, cmd: "EUCOM" },
+{ name: "US: Hohenfels Training Area", lat: 49.2319, lon: 11.8389, cmd: "EUCOM" },
+{ name: "US: Ansbach Military Community", lat: 49.3000, lon: 10.5833, cmd: "EUCOM" },
+{ name: "US: Stuttgart (Patch Barracks)", lat: 48.7356, lon: 9.0817, cmd: "EUCOM" }, // EUCOM Headquarters
+{ name: "US: Wiesbaden Army Airfield", lat: 50.0494, lon: 8.3258, cmd: "EUCOM" },
+{ name: "US: Landstuhl Regional Medical Center", lat: 49.4000, lon: 7.5667, cmd: "EUCOM" },
+{ name: "US: Pirmasens Storage Station", lat: 49.2000, lon: 7.6000, cmd: "EUCOM" },
+
+// --- EUCOM (Итали) ---
+{ name: "US: Aviano Air Base", lat: 46.0319, lon: 12.5964, cmd: "EUCOM" },
+{ name: "US: Caserma Ederle (Vicenza)", lat: 45.5422, lon: 11.5661, cmd: "EUCOM" },
+{ name: "US: Camp Darby", lat: 43.6333, lon: 10.3333, cmd: "EUCOM" },
+{ name: "US: Naval Support Activity Naples", lat: 40.8872, lon: 14.2882, cmd: "EUCOM" },
+{ name: "US: Sigonella Naval Air Station", lat: 37.4011, lon: 14.9225, cmd: "EUCOM" },
+{ name: "US: Gaeta Naval Support Activity", lat: 41.2167, lon: 13.5667, cmd: "EUCOM" },
+
+// --- EUCOM (Их Британи) ---
+{ name: "US: RAF Mildenhall", lat: 52.3639, lon: 0.4856, cmd: "EUCOM" },
+{ name: "US: RAF Lakenheath", lat: 52.4083, lon: 0.5550, cmd: "EUCOM" },
+{ name: "US: RAF Alconbury", lat: 52.3789, lon: -0.2242, cmd: "EUCOM" },
+{ name: "US: RAF Molesworth", lat: 52.3800, lon: -0.4400, cmd: "EUCOM" },
+{ name: "US: RAF Croughton", lat: 51.9886, lon: -1.1814, cmd: "EUCOM" },
+{ name: "US: RAF Menwith Hill", lat: 54.0083, lon: -1.6903, cmd: "EUCOM" },
+{ name: "US: RAF Fairford", lat: 51.6822, lon: -1.7900, cmd: "EUCOM" },
+
+// --- EUCOM (Бусад Европ) ---
+{ name: "US: Naval Station Rota, Spain", lat: 36.6359, lon: -6.3475, cmd: "EUCOM" },
+{ name: "US: Morón Air Base, Spain", lat: 37.1750, lon: -5.6156, cmd: "EUCOM" },
+{ name: "US: Incirlik Air Base, Turkey", lat: 37.0019, lon: 35.4258, cmd: "EUCOM" },
+{ name: "US: Izmir Air Station, Turkey", lat: 38.4333, lon: 27.1500, cmd: "EUCOM" },
+{ name: "US: Lajes Field, Azores (Portugal)", lat: 38.7619, lon: -27.0908, cmd: "EUCOM" },
+{ name: "US: Souda Bay Naval Base, Greece", lat: 35.4833, lon: 24.1500, cmd: "EUCOM" },
+{ name: "US: Chièvres Air Base, Belgium", lat: 50.5847, lon: 3.8297, cmd: "EUCOM" },
+{ name: "US: Schinnen (USAG Benelux), Netherlands", lat: 50.9431, lon: 5.8867, cmd: "EUCOM" },
+{ name: "US: Camp Bondsteel, Kosovo", lat: 42.3661, lon: 21.2519, cmd: "EUCOM" },
+{ name: "US: Mihail Kogalniceanu, Romania", lat: 44.3316, lon: 28.4878, cmd: "EUCOM" },
+{ name: "US: Novo Selo Training Range, Bulgaria", lat: 42.6500, lon: 26.5833, cmd: "EUCOM" },
+{ name: "US: Redzikowo (Aegis Ashore), Poland", lat: 54.4758, lon: 17.1083, cmd: "EUCOM" },
+{ name: "US: Powidz Air Base, Poland", lat: 52.3800, lon: 17.8500, cmd: "EUCOM" },
+{ name: "US: Shannon Airport (Transit), Ireland", lat: 52.7019, lon: -8.9248, cmd: "EUCOM" },
+
+// --- CENTCOM (Ойрхи Дорнод) ---
+{ name: "US: Al Udeid Air Base, Qatar", lat: 25.1172, lon: 51.3149, cmd: "CENTCOM" }, // Forward HQ
+{ name: "US: As Sayliyah Army Base, Qatar", lat: 25.2158, lon: 51.4194, cmd: "CENTCOM" },
+{ name: "US: Camp Arifjan, Kuwait", lat: 28.8744, lon: 48.1633, cmd: "CENTCOM" },
+{ name: "US: Ali Al Salem Air Base, Kuwait", lat: 29.3458, lon: 47.5208, cmd: "CENTCOM" },
+{ name: "US: Camp Buehring, Kuwait", lat: 29.6917, lon: 47.4250, cmd: "CENTCOM" },
+{ name: "US: Naval Support Activity Bahrain", lat: 26.2117, lon: 50.6083, cmd: "CENTCOM" }, // 5th Fleet HQ
+{ name: "US: Isa Air Base, Bahrain", lat: 25.9183, lon: 50.5906, cmd: "CENTCOM" },
+{ name: "US: Al Dhafra Air Base, UAE", lat: 24.2482, lon: 54.5477, cmd: "CENTCOM" },
+{ name: "US: Jebel Ali Naval Base, UAE", lat: 24.9897, lon: 55.0711, cmd: "CENTCOM" },
+{ name: "US: Fujairah Naval Base, UAE", lat: 25.1764, lon: 56.3606, cmd: "CENTCOM" },
+{ name: "US: Al-Asad Airbase, Iraq", lat: 33.7844, lon: 42.4403, cmd: "CENTCOM" },
+{ name: "US: Erbil Air Base, Iraq", lat: 36.2369, lon: 43.9992, cmd: "CENTCOM" },
+{ name: "US: Victory Base Complex, Iraq", lat: 33.2425, lon: 44.2344, cmd: "CENTCOM" },
+{ name: "US: Prince Sultan Air Base, Saudi Arabia", lat: 24.0622, lon: 47.5684, cmd: "CENTCOM" },
+{ name: "US: Eskan Village, Saudi Arabia", lat: 24.6144, lon: 46.8550, cmd: "CENTCOM" },
+{ name: "US: Thumrait Air Base, Oman", lat: 17.6653, lon: 54.0244, cmd: "CENTCOM" },
+{ name: "US: RAFO Masirah, Oman", lat: 20.6753, lon: 58.8911, cmd: "CENTCOM" },
+{ name: "US: Duqm Port Support Facility, Oman", lat: 19.6631, lon: 57.7058, cmd: "CENTCOM" },
+{ name: "US: Muwaffaq Salti Air Base, Jordan", lat: 32.3578, lon: 36.4319, cmd: "CENTCOM" },
+{ name: "US: Tower 22, Jordan", lat: 33.3139, lon: 38.7042, cmd: "CENTCOM" },
+{ name: "US: Al-Tanf Garrison, Syria", lat: 33.4731, lon: 38.9328, cmd: "CENTCOM" },
+{ name: "US: Manas Transit Center, Kyrgyzstan (Closed/Historic)", lat: 43.0611, lon: 74.4775, cmd: "CENTCOM" },
+
+// --- AFRICOM (Африка) ---
+{ name: "US: Camp Lemonnier, Djibouti", lat: 11.5472, lon: 43.1492, cmd: "AFRICOM" },
+{ name: "US: Chabelley Airfield, Djibouti", lat: 11.5169, lon: 43.0653, cmd: "AFRICOM" },
+{ name: "US: Agadez Air Base 201, Niger", lat: 16.9634, lon: 8.0163, cmd: "AFRICOM" },
+{ name: "US: Manda Bay, Kenya", lat: -2.2500, lon: 40.9167, cmd: "AFRICOM" },
+{ name: "US: Entebbe CSL, Uganda", lat: 0.0444, lon: 32.4431, cmd: "AFRICOM" },
+{ name: "US: Ascension Island Auxiliary Airfield", lat: -7.9694, lon: -14.3939, cmd: "AFRICOM" },
+
+// --- SOUTHCOM (Латин Америк & Кариб) ---
+{ name: "US: Guantanamo Bay Naval Base, Cuba", lat: 19.9150, lon: -75.1517, cmd: "SOUTHCOM" },
+{ name: "US: Soto Cano Air Base, Honduras", lat: 14.3847, lon: -87.6214, cmd: "SOUTHCOM" },
+{ name: "US: Comalapa Forward Operating Site, El Salvador", lat: 13.4441, lon: -89.0556, cmd: "SOUTHCOM" },
+{ name: "US: Aruba-Curacao (FOL), Curacao", lat: 12.1883, lon: -68.9667, cmd: "SOUTHCOM" },
+{ name: "US: Andros Island (AUTEC), Bahamas", lat: 24.7000, lon: -77.7667, cmd: "SOUTHCOM" },
+
+// --- NORTHCOM (АНУ Төв ба Өмнөд нэмэлт) ---
+{ name: "US: Fort Cavenos (Fort Hood), TX", lat: 31.1347, lon: -97.7797, cmd: "NORTHCOM" },
+{ name: "US: Goodfellow Air Force Base, TX", lat: 31.4319, lon: -100.3958, cmd: "NORTHCOM" },
+{ name: "US: Sheppard Air Force Base, TX", lat: 33.9850, lon: -98.4919, cmd: "NORTHCOM" },
+{ name: "US: Corpus Christi Naval Air Station, TX", lat: 27.6931, lon: -97.2811, cmd: "NORTHCOM" },
+{ name: "US: Kingsville Naval Air Station, TX", lat: 27.5072, lon: -97.8106, cmd: "NORTHCOM" },
+{ name: "US: Fort Sill, OK", lat: 34.6653, lon: -98.3919, cmd: "NORTHCOM" },
+{ name: "US: Altus Air Force Base, OK", lat: 34.6658, lon: -99.2667, cmd: "NORTHCOM" },
+{ name: "US: McConnell Air Force Base, KS", lat: 37.6258, lon: -97.2689, cmd: "NORTHCOM" },
+{ name: "US: Fort Leavenworth, KS", lat: 39.3517, lon: -94.9214, cmd: "NORTHCOM" },
+{ name: "US: Buckley Space Force Base, CO", lat: 39.7017, lon: -104.7517, cmd: "NORTHCOM" },
+{ name: "US: USAFA (Air Force Academy), CO", lat: 39.0089, lon: -104.8867, cmd: "NORTHCOM" },
+{ name: "US: Fort Carson, CO", lat: 38.7419, lon: -104.7911, cmd: "NORTHCOM" },
+{ name: "US: F.E. Warren AFB, WY", lat: 41.1447, lon: -104.8617, cmd: "NORTHCOM" }, // ICBM Base
+{ name: "US: Mountain Home AFB, ID", lat: 43.0444, lon: -115.8664, cmd: "NORTHCOM" },
+{ name: "US: Gowen Field, ID", lat: 43.5644, lon: -116.2228, cmd: "NORTHCOM" },
+{ name: "US: Grissom Air Reserve Base, IN", lat: 40.6625, lon: -86.1517, cmd: "NORTHCOM" },
+{ name: "US: Selfridge Air National Guard Base, MI", lat: 42.6111, lon: -82.8353, cmd: "NORTHCOM" },
+{ name: "US: Camp Atterbury, IN", lat: 39.3500, lon: -86.0100, cmd: "NORTHCOM" },
+{ name: "US: Camp Grayling, MI", lat: 44.6617, lon: -84.7150, cmd: "NORTHCOM" },
+{ name: "US: Fort McCoy, WI", lat: 43.9853, lon: -90.6714, cmd: "NORTHCOM" },
+{ name: "US: Fort Harrison, MT", lat: 46.6119, lon: -112.1008, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Alabama & Mississippi) ---
+{ name: "US: Fort Novosel (Fort Rucker), AL", lat: 31.3361, lon: -85.7142, cmd: "NORTHCOM" },
+{ name: "US: Maxwell Air Force Base, AL", lat: 32.3817, lon: -86.3550, cmd: "NORTHCOM" },
+{ name: "US: Redstone Arsenal, AL", lat: 34.6861, lon: -86.6536, cmd: "NORTHCOM" },
+{ name: "US: Sumpter Smith Joint National Guard Base, AL", lat: 33.5647, lon: -86.7533, cmd: "NORTHCOM" },
+{ name: "US: Camp Shelby, MS", lat: 31.1911, lon: -89.2131, cmd: "NORTHCOM" },
+{ name: "US: Columbus AFB, MS", lat: 33.6439, lon: -88.4439, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Florida & Georgia) ---
+{ name: "US: Camp Blanding, FL", lat: 29.9833, lon: -81.9833, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Key West, FL", lat: 24.5758, lon: -81.6889, cmd: "NORTHCOM" },
+{ name: "US: Whiting Field Naval Air Station, FL", lat: 30.7239, lon: -87.0219, cmd: "NORTHCOM" },
+{ name: "US: Fort Stewart, GA", lat: 31.9377, lon: -81.6074, cmd: "NORTHCOM" },
+{ name: "US: Hunter Army Airfield, GA", lat: 32.0117, lon: -81.1458, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Logistics Base Albany, GA", lat: 31.5500, lon: -84.0500, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (North & South Carolina) ---
+{ name: "US: Marine Corps Base Camp Lejeune, NC", lat: 34.5939, lon: -77.3394, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Air Station Cherry Point, NC", lat: 34.9008, lon: -76.8808, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Air Station New River, NC", lat: 34.7081, lon: -77.4381, cmd: "NORTHCOM" },
+{ name: "US: Fort Jackson, SC", lat: 34.0450, lon: -80.8986, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Recruit Depot Parris Island, SC", lat: 32.3333, lon: -80.7000, cmd: "NORTHCOM" },
+{ name: "US: McEntire Joint National Guard Base, SC", lat: 33.9219, lon: -80.7992, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Virginia & Maryland) ---
+{ name: "US: Fort Belvoir, VA", lat: 38.7189, lon: -77.1536, cmd: "NORTHCOM" },
+{ name: "US: Fort Myer, VA", lat: 38.8842, lon: -77.0803, cmd: "NORTHCOM" },
+{ name: "US: Fort Gregg-Adams (Fort Lee), VA", lat: 37.2458, lon: -77.3389, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Base Quantico, VA", lat: 38.5025, lon: -77.3006, cmd: "NORTHCOM" },
+{ name: "US: Naval Surface Warfare Center Dahlgren, VA", lat: 38.3267, lon: -77.0500, cmd: "NORTHCOM" },
+{ name: "US: Fort Meade, MD", lat: 39.1097, lon: -76.7328, cmd: "NORTHCOM" }, // NSA HQ
+{ name: "US: Aberdeen Proving Ground, MD", lat: 39.4686, lon: -76.1364, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Patuxent River, MD", lat: 38.2858, lon: -76.4117, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Pennsylvania & New York & New Jersey) ---
+{ name: "US: Carlisle Barracks, PA", lat: 40.2106, lon: -77.1758, cmd: "NORTHCOM" },
+{ name: "US: Letterkenny Army Depot, PA", lat: 39.9800, lon: -77.7100, cmd: "NORTHCOM" },
+{ name: "US: Tobyhanna Army Depot, PA", lat: 41.1900, lon: -75.4200, cmd: "NORTHCOM" },
+{ name: "US: Fort Hamilton, NY", lat: 40.6100, lon: -74.0300, cmd: "NORTHCOM" },
+{ name: "US: Watervliet Arsenal, NY", lat: 42.7200, lon: -73.7100, cmd: "NORTHCOM" },
+{ name: "US: Picatinny Arsenal, NJ", lat: 40.9500, lon: -74.5200, cmd: "NORTHCOM" },
+{ name: "US: Earle Naval Weapons Station, NJ", lat: 40.3500, lon: -74.1500, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (New England Region) ---
+{ name: "US: Pease Air National Guard Base, NH", lat: 43.0800, lon: -70.8200, cmd: "NORTHCOM" },
+{ name: "US: Barnes Air National Guard Base, MA", lat: 42.1578, lon: -72.7153, cmd: "NORTHCOM" },
+{ name: "US: Otis Air National Guard Base, MA", lat: 41.6500, lon: -70.5200, cmd: "NORTHCOM" },
+{ name: "US: Quonset Point Air National Guard Station, RI", lat: 41.5972, lon: -71.4119, cmd: "NORTHCOM" },
+{ name: "US: Bradley Air National Guard Base, CT", lat: 41.9333, lon: -72.6833, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Great Lakes Region) ---
+{ name: "US: Fort Wayne Air National Guard Station, IN", lat: 40.9789, lon: -85.1953, cmd: "NORTHCOM" },
+{ name: "US: Hulman Field Air National Guard Base, IN", lat: 39.4500, lon: -87.3000, cmd: "NORTHCOM" },
+{ name: "US: Rickenbacker Air National Guard Base, OH", lat: 39.8139, lon: -82.9278, cmd: "NORTHCOM" },
+{ name: "US: Springfield-Beckley Municipal Airport, OH", lat: 39.8400, lon: -83.8400, cmd: "NORTHCOM" },
+{ name: "US: Camp Perry, OH", lat: 41.5472, lon: -83.0136, cmd: "NORTHCOM" },
+{ name: "US: General Mitchell Air National Guard Base, WI", lat: 42.9478, lon: -87.8967, cmd: "NORTHCOM" },
+{ name: "US: Volk Field Air National Guard Base, WI", lat: 43.9392, lon: -90.2533, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Central States - IL, IA, MO, MN) ---
+{ name: "US: Rock Island Arsenal, IL", lat: 41.5167, lon: -90.5500, cmd: "NORTHCOM" },
+{ name: "US: Peoria Air National Guard Base, IL", lat: 40.6653, lon: -89.6842, cmd: "NORTHCOM" },
+{ name: "US: Camp Dodge, IA", lat: 41.7000, lon: -93.7167, cmd: "NORTHCOM" },
+{ name: "US: Des Moines Air National Guard Base, IA", lat: 41.5339, lon: -93.6631, cmd: "NORTHCOM" },
+{ name: "US: Camp Ripley, MN", lat: 46.1783, lon: -94.3642, cmd: "NORTHCOM" },
+{ name: "US: Minneapolis-Saint Paul Air Reserve Station, MN", lat: 44.8800, lon: -93.2200, cmd: "NORTHCOM" },
+{ name: "US: Duluth Air National Guard Base, MN", lat: 46.8422, lon: -92.1936, cmd: "NORTHCOM" },
+
+// --- INDOPACOM (Hawaii & Oceania Additional) ---
+{ name: "US: Wheeler Army Airfield, HI", lat: 21.4836, lon: -158.0394, cmd: "INDOPACOM" },
+{ name: "US: Camp H.M. Smith, HI", lat: 21.3911, lon: -157.9008, cmd: "INDOPACOM" }, // INDOPACOM HQ
+{ name: "US: Kaneohe Bay Marine Corps Base, HI", lat: 21.4447, lon: -157.7602, cmd: "INDOPACOM" },
+{ name: "US: Fort Shafter, HI", lat: 21.3456, lon: -157.8847, cmd: "INDOPACOM" },
+{ name: "US: Lualualei Naval Magazine, HI", lat: 21.4300, lon: -158.1300, cmd: "INDOPACOM" },
+{ name: "US: Kwajalein Atoll (USAG-KA), Marshall Islands", lat: 8.7167, lon: 167.7333, cmd: "INDOPACOM" },
+{ name: "US: Wake Island Airfield", lat: 19.2811, lon: 166.6358, cmd: "INDOPACOM" },
+
+// --- NORTHCOM (Texas нэмэлт - Резерв ба Гварди) ---
+{ name: "US: Martindale Army Heliport, TX", lat: 29.4264, lon: -98.3756, cmd: "NORTHCOM" },
+{ name: "US: Camp Mabry, TX", lat: 30.3119, lon: -97.7558, cmd: "NORTHCOM" },
+{ name: "US: Camp Swift, TX", lat: 30.1889, lon: -97.2917, cmd: "NORTHCOM" },
+{ name: "US: Camp Bowie, TX", lat: 31.6789, lon: -98.9886, cmd: "NORTHCOM" },
+{ name: "US: Ellington Field Joint Reserve Base, TX", lat: 29.6111, lon: -95.1589, cmd: "NORTHCOM" },
+{ name: "US: Fort Wolters, TX", lat: 32.8517, lon: -98.0514, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (California - Тэнгисийн цэрэг ба Агаарын хүчин) ---
+{ name: "US: Naval Air Station Lemoore, CA", lat: 36.3333, lon: -119.9525, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station North Island, CA", lat: 32.6994, lon: -117.2153, cmd: "NORTHCOM" },
+{ name: "US: Naval Amphibious Base Coronado, CA", lat: 32.6753, lon: -117.1606, cmd: "NORTHCOM" },
+{ name: "US: Naval Base Ventura County (Point Mugu), CA", lat: 34.1200, lon: -119.1200, cmd: "NORTHCOM" },
+{ name: "US: Naval Base Ventura County (Port Hueneme), CA", lat: 34.1481, lon: -119.1953, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Air Station Miramar, CA", lat: 32.8686, lon: -117.1425, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Logistics Base Barstow, CA", lat: 34.8833, lon: -116.9500, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Air Ground Combat Center Twentynine Palms, CA", lat: 34.2964, lon: -116.0353, cmd: "NORTHCOM" },
+{ name: "US: March Air Reserve Base, CA", lat: 33.8975, lon: -117.2597, cmd: "NORTHCOM" },
+{ name: "US: Los Angeles Space Force Base, CA", lat: 33.9211, lon: -118.3811, cmd: "NORTHCOM" },
+{ name: "US: Camp Roberts, CA", lat: 35.7161, lon: -120.7689, cmd: "NORTHCOM" },
+{ name: "US: Camp San Luis Obispo, CA", lat: 35.3333, lon: -120.6833, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Washington, Oregon, Nevada) ---
+{ name: "US: Naval Magazine Indian Island, WA", lat: 48.0167, lon: -122.7333, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Whidbey Island, WA", lat: 48.3517, lon: -122.6558, cmd: "NORTHCOM" },
+{ name: "US: Kingsley Field Air National Guard Base, OR", lat: 42.1561, lon: -121.7331, cmd: "NORTHCOM" },
+{ name: "US: Portland Air National Guard Base, OR", lat: 45.5886, lon: -122.5969, cmd: "NORTHCOM" },
+{ name: "US: Camp Rilea, OR", lat: 46.1200, lon: -123.9300, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Fallon, NV", lat: 39.4186, lon: -118.7011, cmd: "NORTHCOM" },
+{ name: "US: Hawthorne Army Depot, NV", lat: 38.5433, lon: -118.6256, cmd: "NORTHCOM" },
+
+// --- EUCOM (Герман - US Army Garrisons) ---
+{ name: "US: USAG Bavaria (Garmisch), Germany", lat: 47.4922, lon: 11.0853, cmd: "EUCOM" },
+{ name: "US: USAG Ansbach (Barton Barracks), Germany", lat: 49.3089, lon: 10.5917, cmd: "EUCOM" },
+{ name: "US: USAG Ansbach (Katterbach Kaserne), Germany", lat: 49.3106, lon: 10.6389, cmd: "EUCOM" },
+{ name: "US: USAG Rheinland-Pfalz (Kaiserslautern), Germany", lat: 49.4333, lon: 7.7500, cmd: "EUCOM" },
+{ name: "US: USAG Rheinland-Pfalz (Smith Barracks), Germany", lat: 49.6481, lon: 7.3375, cmd: "EUCOM" },
+{ name: "US: USAG Stuttgart (Kelley Barracks), Germany", lat: 48.7219, lon: 9.1764, cmd: "EUCOM" },
+{ name: "US: USAG Stuttgart (Robinson Barracks), Germany", lat: 48.8156, lon: 9.1983, cmd: "EUCOM" },
+{ name: "US: USAG Wiesbaden (Clay Kaserne), Germany", lat: 50.0494, lon: 8.3258, cmd: "EUCOM" },
+{ name: "US: Miesau Army Depot, Germany", lat: 49.3800, lon: 7.4200, cmd: "EUCOM" },
+{ name: "US: Dagger Complex (Darmstadt), Germany", lat: 49.8500, lon: 8.6167, cmd: "EUCOM" },
+
+// --- EUCOM (Итали ба Бельги) ---
+{ name: "US: Caserma Del Din (Vicenza), Italy", lat: 45.5656, lon: 11.5311, cmd: "EUCOM" },
+{ name: "US: Naval Support Activity Naples (Capodichino), Italy", lat: 40.8817, lon: 14.2858, cmd: "EUCOM" },
+{ name: "US: USAG Benelux (Brussels), Belgium", lat: 50.8500, lon: 4.3500, cmd: "EUCOM" },
+{ name: "US: Zutendaal Army Depot, Belgium", lat: 50.9333, lon: 5.5833, cmd: "EUCOM" },
+
+// --- NORTHCOM (Arizona, New Mexico, Utah, Colorado) ---
+{ name: "US: Barry M. Goldwater Air Force Range, AZ", lat: 32.5000, lon: -113.3000, cmd: "NORTHCOM" },
+{ name: "US: Yuma Proving Ground, AZ", lat: 32.9500, lon: -114.3333, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Air Station Yuma, AZ", lat: 32.6564, lon: -114.6058, cmd: "NORTHCOM" },
+{ name: "US: White Sands Missile Range, NM", lat: 32.9406, lon: -106.4194, cmd: "NORTHCOM" },
+{ name: "US: Dugway Proving Ground, UT", lat: 40.2333, lon: -113.1333, cmd: "NORTHCOM" },
+{ name: "US: Pueblo Chemical Depot, CO", lat: 38.3167, lon: -104.3333, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Montana, Wyoming, Dakotas) ---
+{ name: "US: Camp Guernsey, WY", lat: 42.2667, lon: -104.7333, cmd: "NORTHCOM" },
+{ name: "US: Fort Meade (South Dakota), SD", lat: 44.4100, lon: -103.4800, cmd: "NORTHCOM" },
+{ name: "US: Camp Grafton, ND", lat: 47.9300, lon: -98.9200, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (АНУ-ын Дотоод дахь Резерв, Гварди ба Ложистикийн төвүүд) ---
+{ name: "US: Fort Greely Missile Defense Site, AK", lat: 63.9850, lon: -145.7100, cmd: "NORTHCOM" },
+{ name: "US: Fort Tilden, NY", lat: 40.5561, lon: -73.8933, cmd: "NORTHCOM" },
+{ name: "US: Fort Totten, NY", lat: 40.7917, lon: -73.7800, cmd: "NORTHCOM" },
+{ name: "US: Camp Smith, NY", lat: 41.2917, lon: -73.9333, cmd: "NORTHCOM" },
+{ name: "US: Stewart Air National Guard Base, NY", lat: 41.5000, lon: -74.1000, cmd: "NORTHCOM" },
+{ name: "US: Hancock Field Air National Guard Base, NY", lat: 43.1111, lon: -76.1067, cmd: "NORTHCOM" },
+{ name: "US: Niagara Falls Air Reserve Station, NY", lat: 43.1064, lon: -78.9464, cmd: "NORTHCOM" },
+{ name: "US: Stratton Air National Guard Base, NY", lat: 42.8519, lon: -73.9242, cmd: "NORTHCOM" },
+{ name: "US: F.E. Warren AFB Missile Site, CO", lat: 40.8000, lon: -104.7000, cmd: "NORTHCOM" },
+{ name: "US: Pueblo Memorial Airport (Army Guard), CO", lat: 38.2891, lon: -104.4966, cmd: "NORTHCOM" },
+{ name: "US: Camp George West, CO", lat: 39.7431, lon: -105.1508, cmd: "NORTHCOM" },
+{ name: "US: Fort Logan National Cemetery, CO", lat: 39.6453, lon: -105.0456, cmd: "NORTHCOM" },
+{ name: "US: Buckley SFB Annex, CO", lat: 39.7100, lon: -104.7500, cmd: "NORTHCOM" },
+{ name: "US: Tooele Army Depot, UT", lat: 40.5333, lon: -112.3000, cmd: "NORTHCOM" },
+{ name: "US: Camp Williams, UT", lat: 40.4356, lon: -111.9367, cmd: "NORTHCOM" },
+{ name: "US: Salt Lake City Air National Guard Base, UT", lat: 40.7889, lon: -111.9681, cmd: "NORTHCOM" },
+{ name: "US: Roland R. Wright Air National Guard Base, UT", lat: 40.7700, lon: -111.9700, cmd: "NORTHCOM" },
+{ name: "US: Gowen Field (Army Guard), ID", lat: 43.5644, lon: -116.2228, cmd: "NORTHCOM" },
+{ name: "US: Mountain Home Range Complex, ID", lat: 42.6667, lon: -115.3333, cmd: "NORTHCOM" },
+{ name: "US: Boise Air Terminal (ANG), ID", lat: 43.5600, lon: -116.2200, cmd: "NORTHCOM" },
+{ name: "US: Camp Murray, WA", lat: 47.1189, lon: -122.5600, cmd: "NORTHCOM" },
+{ name: "US: Fairchild AFB Annex, WA", lat: 47.6000, lon: -117.6500, cmd: "NORTHCOM" },
+{ name: "US: Yakima Training Center, WA", lat: 46.6800, lon: -120.4500, cmd: "NORTHCOM" },
+{ name: "US: Bangor Submarine Base, WA", lat: 47.7472, lon: -122.7269, cmd: "NORTHCOM" },
+{ name: "US: Keyport Undersea Warfare Center, WA", lat: 47.7000, lon: -122.6200, cmd: "NORTHCOM" },
+{ name: "US: Manchester Fuel Depot, WA", lat: 47.5500, lon: -122.5400, cmd: "NORTHCOM" },
+{ name: "US: Vancouver Barracks, WA", lat: 45.6331, lon: -122.6611, cmd: "NORTHCOM" },
+{ name: "US: Camp Withycombe, OR", lat: 45.4244, lon: -122.5708, cmd: "NORTHCOM" },
+{ name: "US: Umatilla Army Depot, OR", lat: 45.8453, lon: -119.3114, cmd: "NORTHCOM" },
+{ name: "US: McChord Field (JBLM), WA", lat: 47.1378, lon: -122.4764, cmd: "NORTHCOM" },
+{ name: "US: Fort Lawton, WA", lat: 47.6622, lon: -122.4064, cmd: "NORTHCOM" },
+{ name: "US: Parks Reserve Forces Training Area, CA", lat: 37.7167, lon: -121.9000, cmd: "NORTHCOM" },
+{ name: "US: Point Loma Naval Base, CA", lat: 32.6933, lon: -117.2333, cmd: "NORTHCOM" },
+{ name: "US: North Island Naval Air Station, CA", lat: 32.6994, lon: -117.2153, cmd: "NORTHCOM" },
+{ name: "US: Moffett Federal Airfield, CA", lat: 37.4150, lon: -122.0483, cmd: "NORTHCOM" },
+{ name: "US: Camp Pendleton South, CA", lat: 33.2200, lon: -117.3800, cmd: "NORTHCOM" },
+{ name: "US: Camp Pendleton North, CA", lat: 33.3644, lon: -117.4256, cmd: "NORTHCOM" },
+{ name: "US: San Onofre Housing (Marine Corps), CA", lat: 33.3700, lon: -117.5700, cmd: "NORTHCOM" },
+{ name: "US: Seal Beach Naval Weapons Station, CA", lat: 33.7500, lon: -118.0667, cmd: "NORTHCOM" },
+{ name: "US: China Lake Naval Air Weapons Station, CA", lat: 35.6833, lon: -117.6500, cmd: "NORTHCOM" },
+{ name: "US: Fort Hunter Liggett, CA", lat: 36.0114, lon: -121.2336, cmd: "NORTHCOM" },
+{ name: "US: Paso Robles Training Area, CA", lat: 35.6333, lon: -120.6500, cmd: "NORTHCOM" },
+{ name: "US: Fresno Air National Guard Base, CA", lat: 36.7761, lon: -119.7181, cmd: "NORTHCOM" },
+{ name: "US: Channel Islands Air National Guard Station, CA", lat: 34.1167, lon: -119.1167, cmd: "NORTHCOM" },
+{ name: "US: Ontario Air National Guard Base, CA", lat: 34.0561, lon: -117.6011, cmd: "NORTHCOM" },
+{ name: "US: Fort Rosecrans, CA", lat: 32.6800, lon: -117.2400, cmd: "NORTHCOM" },
+{ name: "US: North Bay Training Area, CA", lat: 38.1000, lon: -122.5000, cmd: "NORTHCOM" },
+{ name: "US: Presidio of Monterey, CA", lat: 36.6033, lon: -121.9125, cmd: "NORTHCOM" },
+{ name: "US: Schilling Manor, KS", lat: 38.7800, lon: -97.6400, cmd: "NORTHCOM" },
+{ name: "US: Fort Scott National Guard, KS", lat: 37.8394, lon: -94.7083, cmd: "NORTHCOM" },
+{ name: "US: Forbes Field Air National Guard Base, KS", lat: 38.9500, lon: -95.6667, cmd: "NORTHCOM" },
+{ name: "US: Smoky Hill Weapons Range, KS", lat: 38.6500, lon: -97.8000, cmd: "NORTHCOM" },
+{ name: "US: New Century AirCenter, KS", lat: 38.8267, lon: -94.8889, cmd: "NORTHCOM" },
+{ name: "US: Fort Lincoln, ND", lat: 46.7589, lon: -100.8353, cmd: "NORTHCOM" },
+{ name: "US: Hector Field Air National Guard Base, ND", lat: 46.9167, lon: -96.8167, cmd: "NORTHCOM" },
+{ name: "US: Joe Foss Field Air National Guard Base, SD", lat: 43.5833, lon: -96.7333, cmd: "NORTHCOM" },
+{ name: "US: Camp Rapid, SD", lat: 44.0789, lon: -103.2536, cmd: "NORTHCOM" },
+{ name: "US: Huron Regional Airport (ANG), SD", lat: 44.3853, lon: -98.2286, cmd: "NORTHCOM" },
+{ name: "US: Omaha USAR Center, NE", lat: 41.2500, lon: -96.0000, cmd: "NORTHCOM" },
+{ name: "US: Lincoln Air National Guard Base, NE", lat: 40.8500, lon: -96.7500, cmd: "NORTHCOM" },
+{ name: "US: Mead Training Site, NE", lat: 41.1500, lon: -96.4800, cmd: "NORTHCOM" },
+{ name: "US: Camp Robinson, AR", lat: 34.8200, lon: -92.2900, cmd: "NORTHCOM" },
+{ name: "US: Fort Chaffee, AR", lat: 35.2956, lon: -94.2881, cmd: "NORTHCOM" },
+{ name: "US: Ebbing Air National Guard Base, AR", lat: 35.3333, lon: -94.3667, cmd: "NORTHCOM" },
+{ name: "US: Hot Springs Memorial Field (ANG), AR", lat: 34.4781, lon: -93.1000, cmd: "NORTHCOM" },
+{ name: "US: Tinker AFB Annex, OK", lat: 35.4100, lon: -97.3800, cmd: "NORTHCOM" },
+{ name: "US: Will Rogers Air National Guard Base, OK", lat: 35.3900, lon: -97.6000, cmd: "NORTHCOM" },
+{ name: "US: Tulsa Air National Guard Base, OK", lat: 36.1983, lon: -95.8881, cmd: "NORTHCOM" },
+{ name: "US: Glenwood Training Area, IA", lat: 41.0500, lon: -95.7333, cmd: "NORTHCOM" },
+{ name: "US: Fort Des Moines, IA", lat: 41.5239, lon: -93.6192, cmd: "NORTHCOM" },
+{ name: "US: Sioux City Air National Guard Base, IA", lat: 42.4000, lon: -96.3833, cmd: "NORTHCOM" },
+{ name: "US: Middletown Reserve Center, IA", lat: 40.8167, lon: -91.2500, cmd: "NORTHCOM" },
+{ name: "US: Jefferson Barracks, MO", lat: 38.4867, lon: -90.2781, cmd: "NORTHCOM" },
+{ name: "US: Rosecrans Air National Guard Base, MO", lat: 39.7700, lon: -94.9100, cmd: "NORTHCOM" },
+{ name: "US: Lambert-St. Louis Air National Guard Base, MO", lat: 38.7400, lon: -90.3600, cmd: "NORTHCOM" },
+{ name: "US: Fort Crowder, MO", lat: 36.7800, lon: -94.3200, cmd: "NORTHCOM" },
+{ name: "US: Lake City Army Ammunition Plant, MO", lat: 39.1000, lon: -94.2800, cmd: "NORTHCOM" },
+{ name: "US: Camp Dodge Annex, IA", lat: 41.7100, lon: -93.7200, cmd: "NORTHCOM" },
+{ name: "US: Savanna Army Depot, IL", lat: 42.1000, lon: -90.1500, cmd: "NORTHCOM" },
+{ name: "US: Joliet Army Ammunition Plant, IL", lat: 41.3667, lon: -88.1167, cmd: "NORTHCOM" },
+{ name: "US: Abraham Lincoln Capital Airport (ANG), IL", lat: 39.8400, lon: -89.6700, cmd: "NORTHCOM" },
+{ name: "US: Greater Peoria Airport (ANG), IL", lat: 40.6600, lon: -89.6800, cmd: "NORTHCOM" },
+{ name: "US: Naval Station Great Lakes, IL", lat: 42.3100, lon: -87.8500, cmd: "NORTHCOM" },
+{ name: "US: Fort Sheridan, IL", lat: 42.2158, lon: -87.8106, cmd: "NORTHCOM" },
+{ name: "US: Battle Creek Air National Guard Base, MI", lat: 42.3081, lon: -85.2508, cmd: "NORTHCOM" },
+{ name: "US: Alpena Combat Readiness Training Center, MI", lat: 45.0700, lon: -83.5600, cmd: "NORTHCOM" },
+{ name: "US: Detroit Arsenal, MI", lat: 42.4939, lon: -83.0231, cmd: "NORTHCOM" },
+{ name: "US: Camp Lucas, MI", lat: 46.4800, lon: -84.3500, cmd: "NORTHCOM" },
+{ name: "US: Badger Army Ammunition Plant, WI", lat: 43.3667, lon: -89.7667, cmd: "NORTHCOM" },
+{ name: "US: Truax Field Air National Guard Base, WI", lat: 43.1400, lon: -89.3400, cmd: "NORTHCOM" },
+{ name: "US: General Mitchell International Airport (ANG), WI", lat: 42.9400, lon: -87.8900, cmd: "NORTHCOM" },
+{ name: "US: Navy Operational Support Center Madison, WI", lat: 43.1300, lon: -89.3300, cmd: "NORTHCOM" },
+{ name: "US: Atterbury-Muscatatuck, IN", lat: 39.3500, lon: -86.0000, cmd: "NORTHCOM" },
+{ name: "US: Crane Naval Surface Warfare Center, IN", lat: 38.8833, lon: -86.8333, cmd: "NORTHCOM" },
+{ name: "US: Fort Benjamin Harrison, IN", lat: 39.8600, lon: -86.0100, cmd: "NORTHCOM" },
+{ name: "US: Terre Haute Air National Guard Base, IN", lat: 39.4500, lon: -87.3000, cmd: "NORTHCOM" },
+{ name: "US: Mansfield Lahm Air National Guard Base, OH", lat: 40.8200, lon: -82.5200, cmd: "NORTHCOM" },
+{ name: "US: Toledo Air National Guard Base, OH", lat: 41.5900, lon: -83.8000, cmd: "NORTHCOM" },
+{ name: "US: Blue Grass Army Depot, KY", lat: 37.7000, lon: -84.2167, cmd: "NORTHCOM" },
+{ name: "US: Standiford Field Air National Guard Base, KY", lat: 38.1700, lon: -85.7300, cmd: "NORTHCOM" },
+{ name: "US: Wendover Air Force Base, UT", lat: 40.7186, lon: -114.0308, cmd: "NORTHCOM" },
+{ name: "US: Logan Caches County Airport (ANG), UT", lat: 41.7800, lon: -111.8500, cmd: "NORTHCOM" },
+
+// --- EUCOM (Европын жижиг байгууламжууд) ---
+{ name: "US: Garmisch Military Community, Germany", lat: 47.4900, lon: 11.1000, cmd: "EUCOM" },
+{ name: "US: Kelley Barracks (AFRICOM HQ), Germany", lat: 48.7219, lon: 9.1764, cmd: "EUCOM" },
+{ name: "US: Robinson Barracks, Germany", lat: 48.8156, lon: 9.1983, cmd: "EUCOM" },
+{ name: "US: Panzer Kaserne, Germany", lat: 48.6833, lon: 9.0500, cmd: "EUCOM" },
+{ name: "US: Patch Barracks, Germany", lat: 48.7356, lon: 9.0817, cmd: "EUCOM" },
+{ name: "US: Stuttgart Army Airfield, Germany", lat: 48.6800, lon: 9.2200, cmd: "EUCOM" },
+{ name: "US: McCully Barracks, Germany", lat: 50.0000, lon: 8.2000, cmd: "EUCOM" },
+{ name: "US: Hainerberg Housing Area, Germany", lat: 50.0700, lon: 8.2600, cmd: "EUCOM" },
+{ name: "US: Mainz-Kastel Storage Station, Germany", lat: 50.0100, lon: 8.2800, cmd: "EUCOM" },
+{ name: "US: Germersheim Army Depot, Germany", lat: 49.2167, lon: 8.3500, cmd: "EUCOM" },
+{ name: "US: Sembach Kaserne, Germany", lat: 49.5000, lon: 7.8500, cmd: "EUCOM" },
+{ name: "US: Vogelweh Military Complex, Germany", lat: 49.4300, lon: 7.7000, cmd: "EUCOM" },
+{ name: "US: Kapaun Air Station, Germany", lat: 49.4333, lon: 7.7167, cmd: "EUCOM" },
+{ name: "US: Einsiedlerhof Air Station, Germany", lat: 49.4333, lon: 7.6500, cmd: "EUCOM" },
+{ name: "US: Pulaski Barracks, Germany", lat: 49.4333, lon: 7.7333, cmd: "EUCOM" },
+{ name: "US: Rhine Ordnance Barracks, Germany", lat: 49.4500, lon: 7.6833, cmd: "EUCOM" },
+{ name: "US: Kleber Kaserne, Germany", lat: 49.4500, lon: 7.7833, cmd: "EUCOM" },
+{ name: "US: Daenner Kaserne, Germany", lat: 49.4500, lon: 7.8000, cmd: "EUCOM" },
+{ name: "US: Miesau Army Depot, Germany", lat: 49.3833, lon: 7.4333, cmd: "EUCOM" },
+{ name: "US: Ramstein North Annex, Germany", lat: 49.4600, lon: 7.6000, cmd: "EUCOM" },
+{ name: "US: Wiesbaden North Annex, Germany", lat: 50.0600, lon: 8.3300, cmd: "EUCOM" },
+{ name: "US: Ansbach South Annex, Germany", lat: 49.2900, lon: 10.5700, cmd: "EUCOM" },
+{ name: "US: Grafenwoehr South Annex, Germany", lat: 49.7000, lon: 11.9000, cmd: "EUCOM" },
+{ name: "US: Vicenza West Annex, Italy", lat: 45.5400, lon: 11.5500, cmd: "EUCOM" },
+{ name: "US: Livorno Logistics Area, Italy", lat: 43.5500, lon: 10.3200, cmd: "EUCOM" },
+{ name: "US: Naples Support Site Gricignano, Italy", lat: 40.9800, lon: 14.2300, cmd: "EUCOM" },
+{ name: "US: San Vito dei Normanni Air Station, Italy", lat: 40.6500, lon: 17.8333, cmd: "EUCOM" },
+{ name: "US: Moura Storage Area, Portugal", lat: 38.1300, lon: -7.4500, cmd: "EUCOM" },
+{ name: "US: Lajes North Annex, Azores", lat: 38.7700, lon: -27.0800, cmd: "EUCOM" },
+{ name: "US: Moron North Annex, Spain", lat: 37.1800, lon: -5.6000, cmd: "EUCOM" },
+{ name: "US: Rota Naval Annex, Spain", lat: 36.6400, lon: -6.3300, cmd: "EUCOM" },
+{ name: "US: RAF Alconbury North Annex, UK", lat: 52.3800, lon: -0.2200, cmd: "EUCOM" },
+{ name: "US: RAF Croughton North Annex, UK", lat: 51.9900, lon: -1.1800, cmd: "EUCOM" },
+{ name: "US: RAF Fairford North Annex, UK", lat: 51.6900, lon: -1.7800, cmd: "EUCOM" },
+{ name: "US: RAF Lakenheath South Annex, UK", lat: 52.4000, lon: 0.5500, cmd: "EUCOM" },
+{ name: "US: RAF Mildenhall South Annex, UK", lat: 52.3600, lon: 0.4800, cmd: "EUCOM" },
+{ name: "US: RAF Molesworth South Annex, UK", lat: 52.3800, lon: -0.4300, cmd: "EUCOM" },
+{ name: "US: Souda Bay North Annex, Greece", lat: 35.4900, lon: 24.1600, cmd: "EUCOM" },
+{ name: "US: Incirlik South Annex, Turkey", lat: 36.9900, lon: 35.4300, cmd: "EUCOM" },
+{ name: "US: Izmir South Annex, Turkey", lat: 38.4200, lon: 27.1400, cmd: "EUCOM" },
+{ name: "US: Ankara Support Facility, Turkey", lat: 39.9333, lon: 32.8500, cmd: "EUCOM" },
+{ name: "US: Chievres North Annex, Belgium", lat: 50.5900, lon: 3.8300, cmd: "EUCOM" },
+{ name: "US: Brussels Support Site, Belgium", lat: 50.8400, lon: 4.3600, cmd: "EUCOM" },
+{ name: "US: Schinnen North Annex, Netherlands", lat: 50.9500, lon: 5.8900, cmd: "EUCOM" },
+{ name: "US: Brunssum Support Site, Netherlands", lat: 50.9400, lon: 5.9700, cmd: "EUCOM" },
+{ name: "US: Eygelshoven Army Depot, Netherlands", lat: 50.8900, lon: 6.0600, cmd: "EUCOM" },
+
+// --- NORTHCOM (АНУ-ын Зүүн эрэг ба Төв мужуудын үлдсэн хэсэг) ---
+{ name: "US: Fort Walker (Fort A.P. Hill), VA", lat: 38.1200, lon: -77.3000, cmd: "NORTHCOM" },
+{ name: "US: Fort Barfoot (Fort Pickett), VA", lat: 37.0500, lon: -77.9500, cmd: "NORTHCOM" },
+{ name: "US: Wallops Flight Facility, VA", lat: 37.9386, lon: -75.4572, cmd: "NORTHCOM" },
+{ name: "US: Camp Peary, VA", lat: 37.3300, lon: -76.6700, cmd: "NORTHCOM" },
+{ name: "US: Cheatham Annex, VA", lat: 37.2800, lon: -76.5800, cmd: "NORTHCOM" },
+{ name: "US: Fort Indiantown Gap, PA", lat: 40.4300, lon: -76.5700, cmd: "NORTHCOM" },
+{ name: "US: Pittsburgh Air Reserve Station, PA", lat: 40.4800, lon: -80.2000, cmd: "NORTHCOM" },
+{ name: "US: Horsham Air Guard Station, PA", lat: 40.1900, lon: -75.1400, cmd: "NORTHCOM" },
+{ name: "US: Harrisburg Air National Guard Base, PA", lat: 40.2100, lon: -76.7600, cmd: "NORTHCOM" },
+{ name: "US: New Castle Air National Guard Base, DE", lat: 39.6700, lon: -75.6000, cmd: "NORTHCOM" },
+{ name: "US: Warfield Air National Guard Base, MD", lat: 39.3300, lon: -76.4100, cmd: "NORTHCOM" },
+{ name: "US: Fort Detrick, MD", lat: 39.4353, lon: -77.4272, cmd: "NORTHCOM" },
+{ name: "US: Naval Support Activity Bethesda, MD", lat: 38.9900, lon: -77.0900, cmd: "NORTHCOM" },
+{ name: "US: Indian Head Naval Surface Warfare Center, MD", lat: 38.6000, lon: -77.1600, cmd: "NORTHCOM" },
+{ name: "US: Carderock Naval Surface Warfare Center, MD", lat: 38.9800, lon: -77.1900, cmd: "NORTHCOM" },
+{ name: "US: Joint Base Anacostia-Bolling Annex, DC", lat: 38.8400, lon: -77.0100, cmd: "NORTHCOM" },
+{ name: "US: West Point Military Academy, NY", lat: 41.3918, lon: -73.9625, cmd: "NORTHCOM" },
+{ name: "US: Gabreski Air National Guard Base, NY", lat: 40.8400, lon: -72.6300, cmd: "NORTHCOM" },
+{ name: "US: Vermont Air National Guard Base, VT", lat: 44.4700, lon: -73.1500, cmd: "NORTHCOM" },
+{ name: "US: Camp Johnson, VT", lat: 44.5000, lon: -73.1600, cmd: "NORTHCOM" },
+{ name: "US: Ethan Allen Training Site, VT", lat: 44.5000, lon: -72.9500, cmd: "NORTHCOM" },
+{ name: "US: Bangor Air National Guard Base, ME", lat: 44.8000, lon: -68.8200, cmd: "NORTHCOM" },
+{ name: "US: Camp Keyes, ME", lat: 44.3100, lon: -69.7900, cmd: "NORTHCOM" },
+{ name: "US: Saco Training Site, ME", lat: 43.5100, lon: -70.4700, cmd: "NORTHCOM" },
+{ name: "US: Westover Air Reserve Base, MA", lat: 42.1900, lon: -72.5300, cmd: "NORTHCOM" },
+{ name: "US: Camp Edwards, MA", lat: 41.6800, lon: -70.5500, cmd: "NORTHCOM" },
+{ name: "US: Barnes Air National Guard Base, MA", lat: 42.1500, lon: -72.7100, cmd: "NORTHCOM" },
+{ name: "US: North Smithfield Air Guard Station, RI", lat: 41.9600, lon: -71.5500, cmd: "NORTHCOM" },
+{ name: "US: Camp Fogarty, RI", lat: 41.6300, lon: -71.4900, cmd: "NORTHCOM" },
+{ name: "US: Camp Nett, CT", lat: 41.3400, lon: -72.2100, cmd: "NORTHCOM" },
+{ name: "US: East Granby Air National Guard Base, CT", lat: 41.9300, lon: -72.6800, cmd: "NORTHCOM" },
+{ name: "US: Warren Grove Gunnery Range, NJ", lat: 39.7100, lon: -74.3800, cmd: "NORTHCOM" },
+{ name: "US: Atlantic City Air National Guard Base, NJ", lat: 39.4500, lon: -74.5700, cmd: "NORTHCOM" },
+{ name: "US: Sea Girt Training Center, NJ", lat: 40.1300, lon: -74.0300, cmd: "NORTHCOM" },
+{ name: "US: Camp Dawson, WV", lat: 39.4300, lon: -79.6600, cmd: "NORTHCOM" },
+{ name: "US: McLaughlin Air National Guard Base, WV", lat: 38.3700, lon: -81.5900, cmd: "NORTHCOM" },
+{ name: "US: Shepherd Field Air National Guard Base, WV", lat: 39.4000, lon: -77.9800, cmd: "NORTHCOM" },
+{ name: "US: Yeager Air National Guard Base, WV", lat: 38.3700, lon: -81.5900, cmd: "NORTHCOM" },
+{ name: "US: Camp Atterbury North, IN", lat: 39.3600, lon: -86.0200, cmd: "NORTHCOM" },
+{ name: "US: Muscatatuck Urban Training Center, IN", lat: 39.0400, lon: -85.5300, cmd: "NORTHCOM" },
+{ name: "US: Youngstown Air Reserve Station, OH", lat: 41.2500, lon: -80.6700, cmd: "NORTHCOM" },
+{ name: "US: Toledo Express Airport (ANG), OH", lat: 41.5900, lon: -83.8000, cmd: "NORTHCOM" },
+{ name: "US: Camp Sherman, OH", lat: 39.3600, lon: -83.0000, cmd: "NORTHCOM" },
+{ name: "US: Fort Campbell North, KY", lat: 36.6800, lon: -87.4800, cmd: "NORTHCOM" },
+{ name: "US: Blue Grass Station, KY", lat: 38.0500, lon: -84.3800, cmd: "NORTHCOM" },
+{ name: "US: Berry Field Air National Guard Base, TN", lat: 36.1200, lon: -86.6800, cmd: "NORTHCOM" },
+{ name: "US: McGhee Tyson Air National Guard Base, TN", lat: 35.8100, lon: -83.9900, cmd: "NORTHCOM" },
+{ name: "US: Memphis Air National Guard Base, TN", lat: 35.0400, lon: -89.9700, cmd: "NORTHCOM" },
+{ name: "US: Arnold Air Force Base, TN", lat: 35.3800, lon: -86.0800, cmd: "NORTHCOM" },
+{ name: "US: Volunteer Training Center, TN", lat: 36.0000, lon: -86.6000, cmd: "NORTHCOM" },
+{ name: "US: Milan Army Ammunition Plant, TN", lat: 35.9300, lon: -88.7500, cmd: "NORTHCOM" },
+{ name: "US: Holston Army Ammunition Plant, TN", lat: 36.5300, lon: -82.6100, cmd: "NORTHCOM" },
+{ name: "US: Fort Moore South (Main Post), GA", lat: 32.3500, lon: -84.9700, cmd: "NORTHCOM" },
+{ name: "US: Dobbins Air Reserve Base, GA", lat: 33.9100, lon: -84.5100, cmd: "NORTHCOM" },
+{ name: "US: Savannah Air National Guard Base, GA", lat: 32.1200, lon: -81.2000, cmd: "NORTHCOM" },
+{ name: "US: Moody AFB Annex, GA", lat: 30.9700, lon: -83.1900, cmd: "NORTHCOM" },
+{ name: "US: Kings Bay Naval Submarine Base, GA", lat: 30.7900, lon: -81.5400, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Logistics Base Annex, GA", lat: 31.5500, lon: -84.0500, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Whiting Field North, FL", lat: 30.7200, lon: -87.0200, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Whiting Field South, FL", lat: 30.7000, lon: -87.0100, cmd: "NORTHCOM" },
+{ name: "US: Homestead Air Reserve Base, FL", lat: 25.4800, lon: -80.3800, cmd: "NORTHCOM" },
+{ name: "US: Jacksonville Air National Guard Base, FL", lat: 30.4900, lon: -81.6800, cmd: "NORTHCOM" },
+{ name: "US: Cape Canaveral Space Force Station, FL", lat: 28.4800, lon: -80.5700, cmd: "NORTHCOM" },
+{ name: "US: Naval Support Activity Panama City, FL", lat: 30.1700, lon: -85.7500, cmd: "NORTHCOM" },
+{ name: "US: Eglin AFB Range C, FL", lat: 30.4800, lon: -86.5000, cmd: "NORTHCOM" },
+{ name: "US: Naval Ordnance Test Unit, FL", lat: 28.4100, lon: -80.6000, cmd: "NORTHCOM" },
+{ name: "US: Camp Beauregard, LA", lat: 31.3800, lon: -92.3800, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Joint Reserve Base New Orleans, LA", lat: 29.8200, lon: -90.0200, cmd: "NORTHCOM" },
+{ name: "US: Chennault Airfield (ANG), LA", lat: 30.2100, lon: -93.1400, cmd: "NORTHCOM" },
+{ name: "US: Louisiana National Guard Training Center, LA", lat: 31.0000, lon: -93.2000, cmd: "NORTHCOM" },
+{ name: "US: Key Field Air National Guard Base, MS", lat: 32.3300, lon: -88.7500, cmd: "NORTHCOM" },
+{ name: "US: Jackson Air National Guard Base, MS", lat: 32.3100, lon: -90.0700, cmd: "NORTHCOM" },
+{ name: "US: Gulfport Combat Readiness Training Center, MS", lat: 30.4100, lon: -89.0700, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Meridian, MS", lat: 32.5500, lon: -88.5500, cmd: "NORTHCOM" },
+{ name: "US: Dannelly Field Air National Guard Base, AL", lat: 32.3000, lon: -86.3900, cmd: "NORTHCOM" },
+{ name: "US: Anniston Army Depot, AL", lat: 33.6400, lon: -85.9500, cmd: "NORTHCOM" },
+{ name: "US: Fort McClellan (National Guard), AL", lat: 33.7200, lon: -85.7800, cmd: "NORTHCOM" },
+{ name: "US: Birmingham Air National Guard Base, AL", lat: 33.5600, lon: -86.7500, cmd: "NORTHCOM" },
+
+// --- INDOPACOM (Япон ба Солонгос дахь үлдсэн жижиг баазууд) ---
+{ name: "US: Akasaka Press Center, Japan", lat: 35.6664, lon: 139.7261, cmd: "INDOPACOM" },
+{ name: "US: Camp Fuji, Japan", lat: 35.3128, lon: 138.8353, cmd: "INDOPACOM" },
+{ name: "US: Numazu Training Area, Japan", lat: 35.0833, lon: 138.8667, cmd: "INDOPACOM" },
+{ name: "US: Camp Kinser (Okinawa), Japan", lat: 26.2486, lon: 127.7011, cmd: "INDOPACOM" },
+{ name: "US: Camp Lester (Okinawa), Japan", lat: 26.3167, lon: 127.7667, cmd: "INDOPACOM" },
+{ name: "US: Camp McTureous (Okinawa), Japan", lat: 26.3833, lon: 127.8667, cmd: "INDOPACOM" },
+{ name: "US: Camp Schwab (Okinawa), Japan", lat: 26.5244, lon: 128.0436, cmd: "INDOPACOM" },
+{ name: "US: White Beach Naval Facility, Japan", lat: 26.2900, lon: 127.9150, cmd: "INDOPACOM" },
+{ name: "US: Kadena Ammunition Storage, Japan", lat: 26.3600, lon: 127.7700, cmd: "INDOPACOM" },
+{ name: "US: Torii Station (Okinawa), Japan", lat: 26.3811, lon: 127.7267, cmd: "INDOPACOM" },
+{ name: "US: Camp Gonsalves (JWTC), Japan", lat: 26.6500, lon: 128.1667, cmd: "INDOPACOM" },
+{ name: "US: Kunsan West Annex, South Korea", lat: 35.9200, lon: 126.6100, cmd: "INDOPACOM" },
+{ name: "US: Osan North Annex, South Korea", lat: 37.1000, lon: 127.0300, cmd: "INDOPACOM" },
+{ name: "US: Camp Henry, South Korea", lat: 35.8500, lon: 128.6000, cmd: "INDOPACOM" },
+{ name: "US: Camp George, South Korea", lat: 35.8400, lon: 128.5900, cmd: "INDOPACOM" },
+{ name: "US: Camp Long (Closed/Historic), South Korea", lat: 37.3500, lon: 127.9500, cmd: "INDOPACOM" },
+{ name: "US: Camp Market, South Korea", lat: 37.4900, lon: 126.7100, cmd: "INDOPACOM" },
+{ name: "US: Pier 8 (Busan), South Korea", lat: 35.1200, lon: 129.0600, cmd: "INDOPACOM" },
+{ name: "US: Gimhae Air Base (US Unit), South Korea", lat: 35.1700, lon: 128.9400, cmd: "INDOPACOM" },
+
+// --- NORTHCOM (California & West Coast Final) ---
+{ name: "US: Point Mugu Range South, CA", lat: 34.0500, lon: -119.1000, cmd: "NORTHCOM" },
+{ name: "US: San Clemente Island NALF, CA", lat: 33.0000, lon: -118.5833, cmd: "NORTHCOM" },
+{ name: "US: San Nicolas Island NOLF, CA", lat: 33.2400, lon: -119.4500, cmd: "NORTHCOM" },
+{ name: "US: Camp Moreno, CA", lat: 33.8500, lon: -117.2000, cmd: "NORTHCOM" },
+{ name: "US: Fort Irwin Training Area B, CA", lat: 35.3000, lon: -116.7000, cmd: "NORTHCOM" },
+{ name: "US: Sierra Army Depot, CA", lat: 40.1800, lon: -120.1500, cmd: "NORTHCOM" },
+{ name: "US: Naval Postgraduate School, CA", lat: 36.5900, lon: -121.8700, cmd: "NORTHCOM" },
+{ name: "US: Defense Language Institute, CA", lat: 36.6000, lon: -121.9100, cmd: "NORTHCOM" },
+{ name: "US: Marine Corps Mountain Warfare Training Center, CA", lat: 38.3500, lon: -119.5100, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Lemoore South, CA", lat: 36.3200, lon: -119.9400, cmd: "NORTHCOM" },
+{ name: "US: Imperial County NOLF, CA", lat: 32.8300, lon: -115.5800, cmd: "NORTHCOM" },
+{ name: "US: El Centro Naval Air Facility, CA", lat: 32.8200, lon: -115.6700, cmd: "NORTHCOM" },
+{ name: "US: Travis AFB North Annex, CA", lat: 38.2700, lon: -121.9200, cmd: "NORTHCOM" },
+{ name: "US: Beale AFB South Annex, CA", lat: 39.1200, lon: -121.4200, cmd: "NORTHCOM" },
+{ name: "US: Fairchild AFB West Annex, WA", lat: 47.6200, lon: -117.6700, cmd: "NORTHCOM" },
+{ name: "US: JBLM Lewis North, WA", lat: 47.1200, lon: -122.5100, cmd: "NORTHCOM" },
+{ name: "US: JBLM Rainier Training Area, WA", lat: 47.0000, lon: -122.3000, cmd: "NORTHCOM" },
+{ name: "US: Boardman Training Range, OR", lat: 45.8300, lon: -119.7500, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Texas & Southwest) ---
+{ name: "US: Fort Bliss East Training Area, TX", lat: 32.1500, lon: -106.0000, cmd: "NORTHCOM" },
+{ name: "US: Red River Army Depot, TX", lat: 33.4300, lon: -94.2800, cmd: "NORTHCOM" },
+{ name: "US: Pantex Plant (Nuclear), TX", lat: 35.3100, lon: -101.5600, cmd: "NORTHCOM" },
+{ name: "US: San Angelo Support Center, TX", lat: 31.4400, lon: -100.4400, cmd: "NORTHCOM" },
+{ name: "US: Biggs Army Airfield, TX", lat: 31.8400, lon: -106.3800, cmd: "NORTHCOM" },
+{ name: "US: Kelly Field Annex, TX", lat: 29.3700, lon: -98.5800, cmd: "NORTHCOM" },
+{ name: "US: Lackland AFB Annex, TX", lat: 29.3800, lon: -98.6200, cmd: "NORTHCOM" },
+{ name: "US: Randolph AFB South, TX", lat: 29.5200, lon: -98.2700, cmd: "NORTHCOM" },
+{ name: "US: Brooks City-Base (Closed/Historic), TX", lat: 29.3400, lon: -98.4400, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Corpus Christi North, TX", lat: 27.7000, lon: -97.2700, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Kingsville South, TX", lat: 27.4900, lon: -97.8200, cmd: "NORTHCOM" },
+{ name: "US: Fort Cavazos West Training Area, TX", lat: 31.2000, lon: -97.9000, cmd: "NORTHCOM" },
+{ name: "US: Fort Bliss North Range, NM", lat: 32.5000, lon: -106.2000, cmd: "NORTHCOM" },
+{ name: "US: White Sands North Range, NM", lat: 33.5000, lon: -106.4000, cmd: "NORTHCOM" },
+{ name: "US: Melrose Air Force Range, NM", lat: 34.2900, lon: -103.7900, cmd: "NORTHCOM" },
+{ name: "US: Sandia National Laboratories, NM", lat: 35.0500, lon: -106.5400, cmd: "NORTHCOM" },
+{ name: "US: Los Alamos National Laboratory, NM", lat: 35.8400, lon: -106.2800, cmd: "NORTHCOM" },
+{ name: "US: Navajo Army Depot, AZ", lat: 35.2300, lon: -111.8300, cmd: "NORTHCOM" },
+{ name: "US: Camp Navajo, AZ", lat: 35.2200, lon: -111.8800, cmd: "NORTHCOM" },
+{ name: "US: Florence Military Reservation, AZ", lat: 33.0500, lon: -111.3300, cmd: "NORTHCOM" },
+{ name: "US: Silver Bell Army Heliport, AZ", lat: 32.5400, lon: -111.4100, cmd: "NORTHCOM" },
+{ name: "US: Gila Bend Air Force Auxiliary Field, AZ", lat: 32.8800, lon: -112.7200, cmd: "NORTHCOM" },
+{ name: "US: Papago Park Military Reservation, AZ", lat: 33.4600, lon: -111.9500, cmd: "NORTHCOM" },
+{ name: "US: Davis-Monthan Storage Area (Boneyard), AZ", lat: 32.1500, lon: -110.8300, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (West Coast & Alaska) ---
+{ name: "US: Fort Hunter Liggett South, CA", lat: 35.9500, lon: -121.2000, cmd: "NORTHCOM" },
+{ name: "US: Camp Roberts West, CA", lat: 35.7500, lon: -120.8500, cmd: "NORTHCOM" },
+{ name: "US: Vandenberg North Launch Site, CA", lat: 34.7800, lon: -120.5800, cmd: "NORTHCOM" },
+{ name: "US: Point Loma Submarine Base, CA", lat: 32.6800, lon: -117.2400, cmd: "NORTHCOM" },
+{ name: "US: Chocolate Mountain Aerial Gunnery Range, CA", lat: 33.2500, lon: -115.4000, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Fallon Range, NV", lat: 39.2000, lon: -118.2000, cmd: "NORTHCOM" },
+{ name: "US: Creech AFB, NV", lat: 36.5800, lon: -115.6700, cmd: "NORTHCOM" },
+{ name: "US: Tonopah Test Range, NV", lat: 37.7900, lon: -116.7800, cmd: "NORTHCOM" },
+{ name: "US: Nevada National Security Site, NV", lat: 37.1300, lon: -116.0500, cmd: "NORTHCOM" },
+{ name: "US: Hill Air Force Range, UT", lat: 41.0000, lon: -112.9000, cmd: "NORTHCOM" },
+{ name: "US: Black Hills Army Depot (Closed), SD", lat: 43.2000, lon: -103.8800, cmd: "NORTHCOM" },
+{ name: "US: Clear Space Force Station Annex, AK", lat: 64.3000, lon: -149.2000, cmd: "NORTHCOM" },
+{ name: "US: Fort Greely North Annex, AK", lat: 64.0500, lon: -145.7500, cmd: "NORTHCOM" },
+{ name: "US: Seward Military Resort, AK", lat: 60.1000, lon: -149.4400, cmd: "NORTHCOM" },
+{ name: "US: Adak Naval Station (Closed), AK", lat: 51.8800, lon: -176.6500, cmd: "NORTHCOM" },
+{ name: "US: King Salmon Air Force Station, AK", lat: 58.6700, lon: -156.6500, cmd: "NORTHCOM" },
+{ name: "US: Galena Airport (USAF Unit), AK", lat: 64.7300, lon: -156.9300, cmd: "NORTHCOM" },
+
+// --- INDOPACOM (Pacific Islands) ---
+{ name: "US: Andersen South AFB, Guam", lat: 13.5200, lon: 144.8800, cmd: "INDOPACOM" },
+{ name: "US: Tinian North Field, CNMI", lat: 15.0600, lon: 145.6300, cmd: "INDOPACOM" },
+{ name: "US: Saipan Army Reserve Center, CNMI", lat: 15.1800, lon: 145.7300, cmd: "INDOPACOM" },
+{ name: "US: Pagan Island Training Area, CNMI", lat: 18.1000, lon: 145.7600, cmd: "INDOPACOM" },
+{ name: "US: Darwin Marine Rotational Site, Australia", lat: -12.4600, lon: 130.8400, cmd: "INDOPACOM" },
+{ name: "US: Pine Gap (Joint Facility), Australia", lat: -23.7900, lon: 133.7300, cmd: "INDOPACOM" },
+{ name: "US: Harold E. Holt Comm Station, Australia", lat: -21.8100, lon: 114.1600, cmd: "INDOPACOM" },
+
+// --- CENTCOM & Other ---
+{ name: "US: Al-Udeid South Annex, Qatar", lat: 25.1000, lon: 51.3000, cmd: "CENTCOM" },
+{ name: "US: Ali Al Salem North, Kuwait", lat: 29.3600, lon: 47.5400, cmd: "CENTCOM" },
+{ name: "US: Camp Patriot, Kuwait", lat: 29.0400, lon: 48.1100, cmd: "CENTCOM" },
+{ name: "US: Naval Support Activity Bahrain North, Bahrain", lat: 26.2200, lon: 50.6200, cmd: "CENTCOM" },
+{ name: "US: Al Dhafra South Range, UAE", lat: 24.2000, lon: 54.5000, cmd: "CENTCOM" },
+{ name: "US: Thumrait Air Base Annex, Oman", lat: 17.6500, lon: 54.0100, cmd: "CENTCOM" },
+{ name: "US: Massawa Transit Center, Eritrea (Closed)", lat: 15.6000, lon: 39.4500, cmd: "AFRICOM" },
+
+// --- NORTHCOM (Final Reserve Centers) ---
+{ name: "US: Fort Snelling, MN", lat: 44.8900, lon: -93.2000, cmd: "NORTHCOM" },
+{ name: "US: Camp Dodge South Annex, IA", lat: 41.6800, lon: -93.7000, cmd: "NORTHCOM" },
+{ name: "US: Fort Thomas Reserve Center, KY", lat: 39.0700, lon: -84.4500, cmd: "NORTHCOM" },
+{ name: "US: Whitehall Reserve Center, OH", lat: 39.9600, lon: -82.8800, cmd: "NORTHCOM" },
+{ name: "US: Vienna Air Reserve Station, OH", lat: 41.2500, lon: -80.6700, cmd: "NORTHCOM" },
+{ name: "US: Fort Gillem, GA", lat: 33.6200, lon: -84.3200, cmd: "NORTHCOM" },
+{ name: "US: Fort McPherson (Closed/Historic), GA", lat: 33.7000, lon: -84.4300, cmd: "NORTHCOM" },
+{ name: "US: Naval Support Activity Crane, IN", lat: 38.8800, lon: -86.8300, cmd: "NORTHCOM" },
+{ name: "US: Grissom AFB North Annex, IN", lat: 40.6800, lon: -86.1600, cmd: "NORTHCOM" },
+{ name: "US: Camp Atterbury South Range, IN", lat: 39.3000, lon: -86.0500, cmd: "NORTHCOM" },
+{ name: "US: Fort McCoy West Training Area, WI", lat: 44.0000, lon: -90.7000, cmd: "NORTHCOM" },
+{ name: "US: Camp Williams North Annex, WI", lat: 43.9500, lon: -90.2800, cmd: "NORTHCOM" },
+{ name: "US: Selfridge North Annex, MI", lat: 42.6300, lon: -82.8500, cmd: "NORTHCOM" },
+{ name: "US: Grayling Air Gunnery Range, MI", lat: 44.6000, lon: -84.7500, cmd: "NORTHCOM" },
+{ name: "US: Alpena CRTC South Annex, MI", lat: 45.0500, lon: -83.5800, cmd: "NORTHCOM" },
+{ name: "US: Minneapolis Reserve Station East, MN", lat: 44.8700, lon: -93.2100, cmd: "NORTHCOM" },
+{ name: "US: Saint Paul ANG North Annex, MN", lat: 44.8900, lon: -93.2300, cmd: "NORTHCOM" },
+{ name: "US: Camp Ripley West Range, MN", lat: 46.1500, lon: -94.4000, cmd: "NORTHCOM" },
+{ name: "US: Volk Field East Annex, WI", lat: 43.9200, lon: -90.2300, cmd: "NORTHCOM" },
+{ name: "US: Truax Field South Annex, WI", lat: 43.1200, lon: -89.3200, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Канадын хойд хэсэг) ---
+{ name: "US: CFB Goose Bay, Canada", lat: 53.3192, lon: -60.4258, cmd: "NORTHCOM" }, // NATO Training base
+{ name: "US: CFB Gander, Canada", lat: 48.9667, lon: -54.5833, cmd: "NORTHCOM" },
+{ name: "US: CFB Trenton, Canada", lat: 44.1189, lon: -77.5281, cmd: "NORTHCOM" },
+{ name: "US: Alert Strategic Response Post, Nunavut", lat: 82.5011, lon: -62.3483, cmd: "NORTHCOM" },
+{ name: "US: Iqaluit Forward Operating Location, NU", lat: 63.7564, lon: -68.5558, cmd: "NORTHCOM" },
+{ name: "US: Inuvik Forward Operating Location, NT", lat: 68.3042, lon: -133.4828, cmd: "NORTHCOM" },
+{ name: "US: Yellowknife Forward Operating Location, NT", lat: 62.4628, lon: -114.4403, cmd: "NORTHCOM" },
+{ name: "US: North Warning System Site (PIN-MAIN), Cape Parry", lat: 70.1667, lon: -124.6667, cmd: "NORTHCOM" },
+{ name: "US: North Warning System Site (CAM-MAIN), Cambridge Bay", lat: 69.1167, lon: -105.0500, cmd: "NORTHCOM" },
+
+// --- NORTHCOM (Гренланд - АНУ-ын Space Force) ---
+{ name: "US: Pituffik Space Base (Thule), Greenland", lat: 76.5311, lon: -68.7031, cmd: "NORTHCOM" }, // Ballistic Missile Early Warning
+{ name: "US: Kangerlussuaq Support Facility, Greenland", lat: 67.0111, lon: -50.7011, cmd: "NORTHCOM" },
+{ name: "US: Summit Station (Research/Monitoring), Greenland", lat: 72.5800, lon: -38.4600, cmd: "NORTHCOM" },
+
+// --- SOUTHCOM (Латин Америк ба Карибын тэнгис) ---
+{ name: "US: Fort Buchanan, Puerto Rico", lat: 18.4100, lon: -66.1150, cmd: "SOUTHCOM" },
+{ name: "US: Muñiz Air National Guard Base, PR", lat: 18.4394, lon: -66.0022, cmd: "SOUTHCOM" },
+{ name: "US: Camp Santiago, Puerto Rico", lat: 18.0100, lon: -66.2900, cmd: "SOUTHCOM" },
+{ name: "US: Roosevelt Roads (Closed/Limited Support), PR", lat: 18.2300, lon: -65.6300, cmd: "SOUTHCOM" },
+{ name: "US: Galeta Island (Communication), Panama", lat: 9.4000, lon: -79.8700, cmd: "SOUTHCOM" },
+{ name: "US: Soto Cano Air Base Annex, Honduras", lat: 14.3900, lon: -87.6100, cmd: "SOUTHCOM" },
+{ name: "US: Rainforest Training Area, Guyana", lat: 6.8000, lon: -58.1600, cmd: "SOUTHCOM" },
+{ name: "US: Curacao FOL North, Curacao", lat: 12.1900, lon: -68.9600, cmd: "SOUTHCOM" },
+{ name: "US: Aruba FOL Support, Aruba", lat: 12.5000, lon: -70.0100, cmd: "SOUTHCOM" },
+
+// --- EUCOM / AFRICOM (Атлантын далайн алслагдсан цэгүүд) ---
+{ name: "US: Lajes Field, Azores (Portugal)", lat: 38.7617, lon: -27.0911, cmd: "EUCOM" },
+{ name: "US: Ascension Island Auxiliary Airfield", lat: -7.9694, lon: -14.3939, cmd: "AFRICOM" },
+{ name: "US: RAF Akrotiri (UK/US Support), Cyprus", lat: 34.5900, lon: 32.9800, cmd: "EUCOM" },
+{ name: "US: Limassol Port Support, Cyprus", lat: 34.6500, lon: 33.0200, cmd: "EUCOM" },
+{ name: "US: Mount Troodos SIGINT, Cyprus", lat: 34.9300, lon: 32.8600, cmd: "EUCOM" },
+
+// --- INDOPACOM (Pacific Remote Sites) ---
+{ name: "US: Wake Island Airfield Annex", lat: 19.2800, lon: 166.6500, cmd: "INDOPACOM" },
+{ name: "US: Kwajalein Missile Range South, Marshall Islands", lat: 8.7200, lon: 167.7300, cmd: "INDOPACOM" },
+{ name: "US: Roi-Namur Airfield, Marshall Islands", lat: 9.3900, lon: 167.4700, cmd: "INDOPACOM" },
+{ name: "US: Meck Island (Missile Test), Marshall Islands", lat: 9.0000, lon: 167.7200, cmd: "INDOPACOM" },
+{ name: "US: Ennylabegan Island, Marshall Islands", lat: 8.8000, lon: 167.5000, cmd: "INDOPACOM" },
+{ name: "US: Midway Atoll (Historic/Emergency), Pacific", lat: 28.2100, lon: -177.3700, cmd: "INDOPACOM" },
+{ name: "US: Johnston Atoll (Closed/Emergency), Pacific", lat: 16.7300, lon: -169.5300, cmd: "INDOPACOM" },
+{ name: "US: Tinian West Field, CNMI", lat: 14.9900, lon: 145.6100, cmd: "INDOPACOM" },
+{ name: "US: Pagan Island Airstrip, CNMI", lat: 18.1100, lon: 145.7500, cmd: "INDOPACOM" },
+
+// --- NORTHCOM (Special Ops & Reserve) ---
+{ name: "US: Camp Dawson Event Site, WV", lat: 39.4400, lon: -79.6500, cmd: "NORTHCOM" },
+{ name: "US: Camp Villere, LA", lat: 30.2800, lon: -89.7800, cmd: "NORTHCOM" },
+{ name: "US: Camp Minden, LA", lat: 32.5300, lon: -93.3500, cmd: "NORTHCOM" },
+{ name: "US: Camp Gruber, OK", lat: 35.6600, lon: -95.1800, cmd: "NORTHCOM" },
+{ name: "US: Fort Wolters Training Area, TX", lat: 32.8400, lon: -98.0400, cmd: "NORTHCOM" },
+{ name: "US: Camp Maxey, TX", lat: 33.7900, lon: -95.5300, cmd: "NORTHCOM" },
+{ name: "US: Camp Swift South Range, TX", lat: 30.1700, lon: -97.2800, cmd: "NORTHCOM" },
+{ name: "US: Eagle Pass Border Station, TX", lat: 28.7000, lon: -100.4800, cmd: "NORTHCOM" },
+{ name: "US: Laredo Support Base, TX", lat: 27.5400, lon: -99.4600, cmd: "NORTHCOM" },
+{ name: "US: Fort Hancock Training Area, TX", lat: 31.3000, lon: -105.8500, cmd: "NORTHCOM" },
+{ name: "US: Deming Border Site, NM", lat: 32.2600, lon: -107.7500, cmd: "NORTHCOM" },
+{ name: "US: Douglas Training Area, AZ", lat: 31.3500, lon: -109.5400, cmd: "NORTHCOM" },
+{ name: "US: Naco Border Station, AZ", lat: 31.3300, lon: -109.9500, cmd: "NORTHCOM" },
+{ name: "US: Fort Huachuca East Range, AZ", lat: 31.5500, lon: -110.2000, cmd: "NORTHCOM" },
+{ name: "US: Camp Navajo Depot North, AZ", lat: 35.2400, lon: -111.8500, cmd: "NORTHCOM" },
+{ name: "US: Fort Harrison North Annex, MT", lat: 46.6200, lon: -112.1100, cmd: "NORTHCOM" },
+{ name: "US: Camp Grafton South, ND", lat: 47.8800, lon: -98.9000, cmd: "NORTHCOM" },
+{ name: "US: Limestone Air Force Station (Closed), ME", lat: 46.9500, lon: -67.8800, cmd: "NORTHCOM" },
+{ name: "US: Buckley SFB Storage Site, CO", lat: 39.7200, lon: -104.7700, cmd: "NORTHCOM" },
+{ name: "US: USAFA Training Range, CO", lat: 38.9900, lon: -104.8500, cmd: "NORTHCOM" },
+{ name: "US: Fort Carson South Range, CO", lat: 38.6000, lon: -104.7500, cmd: "NORTHCOM" },
+{ name: "US: Dugway Proving Ground West, UT", lat: 40.2000, lon: -113.2500, cmd: "NORTHCOM" },
+{ name: "US: Wendover Range South, UT", lat: 40.6500, lon: -114.0000, cmd: "NORTHCOM" },
+{ name: "US: Hill AFB South Range, UT", lat: 40.9500, lon: -112.0000, cmd: "NORTHCOM" },
+{ name: "US: Naval Air Station Fallon B-20 Range, NV", lat: 39.5000, lon: -118.4000, cmd: "NORTHCOM" },
+{ name: "US: Creech AFB North Range, NV", lat: 36.7000, lon: -115.7500, cmd: "NORTHCOM" },
+{ name: "US: Tonopah Test Range South, NV", lat: 37.7000, lon: -116.7000, cmd: "NORTHCOM" },
+{ name: "US: Sierra Army Depot East, CA", lat: 40.2000, lon: -120.1000, cmd: "NORTHCOM" },
+{ name: "US: China Lake North Range, CA", lat: 35.9000, lon: -117.7000, cmd: "NORTHCOM" },
+{ name: "US: Twentynine Palms North Range, CA", lat: 34.5000, lon: -116.2000, cmd: "NORTHCOM" },
+{ name: "US: Fort Irwin East Gate, CA", lat: 35.2500, lon: -116.5000, cmd: "NORTHCOM" },
+{ name: "US: Vandenberg South Launch Site, CA", lat: 34.6500, lon: -120.6000, cmd: "NORTHCOM" },
+{ name: "US: Travis AFB South Annex, CA", lat: 38.2500, lon: -121.9000, cmd: "NORTHCOM" },
+{ name: "US: Beale AFB North Annex, CA", lat: 39.1500, lon: -121.4000, cmd: "NORTHCOM" },
+{ name: "US: NAS Lemoore West Range, CA", lat: 36.3500, lon: -120.0000, cmd: "NORTHCOM" },
+{ name: "US: San Clemente Island East Range, CA", lat: 32.9500, lon: -118.5000, cmd: "NORTHCOM" },
+
+// --- EUCOM (Европын үлдсэн хэсэг ба НАТО) ---
+{ name: "NATO: Spangdahlem South Annex, Germany", lat: 49.9700, lon: 6.6900, cmd: "EUCOM" },
+{ name: "NATO: Ansbach Kaserne Annex, Germany", lat: 49.3100, lon: 10.6000, cmd: "EUCOM" },
+{ name: "NATO: Illesheim Army Heliport, Germany", lat: 49.4700, lon: 10.3800, cmd: "EUCOM" },
+{ name: "NATO: Hohenfels East Training Area, Germany", lat: 49.2300, lon: 11.8400, cmd: "EUCOM" },
+{ name: "NATO: Vilseck Rose Barracks North, Germany", lat: 49.6300, lon: 11.7700, cmd: "EUCOM" },
+{ name: "NATO: Oberammergau NATO School, Germany", lat: 47.5900, lon: 11.0600, cmd: "EUCOM" },
+{ name: "NATO: Finthen Army Airfield, Germany", lat: 49.9700, lon: 8.1500, cmd: "EUCOM" },
+{ name: "NATO: Sandhofen Army Depot, Germany", lat: 49.5400, lon: 8.4400, cmd: "EUCOM" },
+{ name: "NATO: Kaiserslautern Depot South, Germany", lat: 49.4300, lon: 7.7500, cmd: "EUCOM" },
+{ name: "NATO: Camp Darby North, Italy", lat: 43.6400, lon: 10.3400, cmd: "EUCOM" },
+{ name: "NATO: Sigonella West NAS, Italy", lat: 37.4000, lon: 14.9200, cmd: "EUCOM" },
+{ name: "NATO: Sigonella East NAS, Italy", lat: 37.4100, lon: 14.9300, cmd: "EUCOM" },
+{ name: "NATO: Aviano Air Base Area F, Italy", lat: 46.0300, lon: 12.6000, cmd: "EUCOM" },
+{ name: "NATO: Aviano Air Base Area D, Italy", lat: 46.0200, lon: 12.5900, cmd: "EUCOM" },
+{ name: "NATO: Vicenza Villaggio Housing Area, Italy", lat: 45.5400, lon: 11.5300, cmd: "EUCOM" },
+{ name: "NATO: RAF Lakenheath South Base, UK", lat: 52.4000, lon: 0.5400, cmd: "EUCOM" },
+{ name: "NATO: RAF Mildenhall North Base, UK", lat: 52.3700, lon: 0.4900, cmd: "EUCOM" },
+{ name: "NATO: RAF Alconbury South Base, UK", lat: 52.3700, lon: -0.2300, cmd: "EUCOM" },
+{ name: "NATO: RAF Croughton South Base, UK", lat: 51.9800, lon: -1.1900, cmd: "EUCOM" },
+{ name: "NATO: Rota Naval Base West, Spain", lat: 36.6300, lon: -6.3500, cmd: "EUCOM" },
+{ name: "NATO: Moron Air Base South, Spain", lat: 37.1700, lon: -5.6200, cmd: "EUCOM" },
+{ name: "NATO: Souda Bay NSA East, Greece", lat: 35.4800, lon: 24.1600, cmd: "EUCOM" },
+{ name: "NATO: Stammheim Army Housing, Germany", lat: 48.8400, lon: 9.1500, cmd: "EUCOM" },
+{ name: "NATO: Böblingen Army Housing, Germany", lat: 48.6800, lon: 9.0100, cmd: "EUCOM" },
+
+// --- EUCOM (Исланд - НАТО-гийн Тэнгисийн цэрэг) ---
+{ name: "NATO: Keflavik Naval Air Station, Iceland", lat: 63.9850, lon: -22.6056, cmd: "EUCOM" },
+{ name: "NATO: Reykjavik Support Facility, Iceland", lat: 64.1281, lon: -21.9406, cmd: "EUCOM" },
+{ name: "NATO: Grindavik Communication Site, Iceland", lat: 63.8433, lon: -22.4272, cmd: "EUCOM" },
+{ name: "NATO: Bolungarvik Radar Station (H-1), Iceland", lat: 66.1731, lon: -23.2300, cmd: "EUCOM" },
+{ name: "NATO: Gunnolfsvik Radar Station (H-3), Iceland", lat: 66.1500, lon: -15.1167, cmd: "EUCOM" },
+{ name: "NATO: Stokksnes Radar Station (H-4), Iceland", lat: 64.2417, lon: -14.9667, cmd: "EUCOM" }
+
+];
+
+// Командлалуудад зориулсан өнгөний код - ШИНЭЧИЛСЭН
+const commandColors = {
+    "INDOPACOM": "#F641F0", // Ягаан
+    "EUCOM": "#00E6FF",     // Цайвар цэнхэр
+    "CENTCOM": "#FFD700",    // Шар/Алтлаг
+    "AFRICOM": "#32CD32",    // Ногоон
+    "NORTHCOM": "#FF4500",   // Улаан/Улбар шар
+    "SOUTHCOM": "#8A2BE2"    // Нил ягаан (Латин Америкийн баазуудад зориулав)
+};
+
+
+usaStrategicBases.forEach(base => {
+    const baseColor = commandColors[base.cmd] || "#ffffff";
+
+    // 1. Төв цэгт байрлах жижиг тод цэг (Одоо "fillOpacity: 1" болгож тодруулсан)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Харагдахуйц жижиг хэмжээ
+        fillColor: baseColor, // Командлалын өнгөөр будна
+        color: "#fff",        
+        weight: 1,           
+        fillOpacity: 1       
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 40,
+        fillColor: baseColor, 
+        color: baseColor, 
+        weight: 0.2,      
+        opacity: 1,     // Хүрээ нь бага зэрэг харагдана
+        fillOpacity: 0.05 // Маш бүдэг дотор тал
+    })
+    .bindTooltip(`<b>${base.name}</b><br>Command: ${base.cmd}`, { 
+        direction: 'top', 
+        className: 'city-label',
+        offset: [0, -10]
+    })
+    .addTo(map);
+});
+
+
+
+const natoStrategicBases = [
+    // --- ГЕРМАН (Төв болон Агаарын хяналт) ---
+    { name: "NATO: Ramstein Air Base, Germany", lat: 49.4367, lon: 7.5911, cmd: "EUCOM" },
+    { name: "NATO: Geilenkirchen Air Base (AWACS), Germany", lat: 50.9592, lon: 6.0431, cmd: "EUCOM" },
+    { name: "NATO: Spangdahlem Air Base, Germany", lat: 49.9722, lon: 6.6917, cmd: "EUCOM" },
+    { name: "NATO: Panzer Kaserne (USAG Stuttgart), Germany", lat: 48.6841, lon: 9.0494, cmd: "EUCOM" },
+    { name: "NATO: Baumholder Military Community, Germany", lat: 49.6481, lon: 7.3386, cmd: "EUCOM" },
+    { name: "NATO: Vilseck (Rose Barracks), Germany", lat: 49.6256, lon: 11.7758, cmd: "EUCOM" },
+    { name: "NATO: Grafenwoehr Training Area, Germany", lat: 49.7136, lon: 11.9058, cmd: "EUCOM" },
+
+    // --- БЕЛЬГИ, НИДЕРЛАНД, ЛЮКСЕМБУРГ (Удирдлага) ---
+    { name: "NATO: Headquarters Brussels, Belgium", lat: 50.8708, lon: 4.4258, cmd: "EUCOM" },
+    { name: "NATO: SHAPE Headquarters, Mons, Belgium", lat: 50.4994, lon: 3.9806, cmd: "EUCOM" },
+    { name: "NATO: Kleine Brogel Air Base, Belgium", lat: 51.1714, lon: 5.4633, cmd: "EUCOM" },
+    { name: "NATO: JFC Brunssum, Netherlands", lat: 50.9419, lon: 5.9686, cmd: "EUCOM" },
+    { name: "NATO: Volkel Air Base, Netherlands", lat: 51.6567, lon: 5.7067, cmd: "EUCOM" },
+
+    // --- ИТАЛИ (Өмнөд жигүүр) ---
+    { name: "NATO: Aviano Air Base, Italy", lat: 46.0319, lon: 12.5964, cmd: "EUCOM" },
+    { name: "NATO: Vicenza (Camp Ederle), Italy", lat: 45.5483, lon: 11.5656, cmd: "EUCOM" },
+    { name: "NATO: Sigonella Naval Air Station, Italy", lat: 37.4017, lon: 14.9222, cmd: "EUCOM" },
+    { name: "NATO: JFC Naples, Italy", lat: 40.9167, lon: 14.1333, cmd: "EUCOM" },
+    { name: "NATO: Ghedi Air Base, Italy", lat: 45.4289, lon: 10.2689, cmd: "EUCOM" },
+
+    // --- ПОЛЬШ, БАЛТЫН ОРНУУД (Зүүн жигүүр) ---
+    { name: "NATO: Redzikowo Aegis Ashore, Poland", lat: 54.4764, lon: 17.1100, cmd: "EUCOM" },
+    { name: "NATO: Powidz Air Base, Poland", lat: 52.3783, lon: 17.8539, cmd: "EUCOM" },
+    { name: "NATO: Lask Air Base, Poland", lat: 51.5517, lon: 19.1786, cmd: "EUCOM" },
+    { name: "NATO: Šiauliai Air Base, Lithuania", lat: 55.8939, lon: 23.3944, cmd: "EUCOM" },
+    { name: "NATO: Ämari Air Base, Estonia", lat: 59.2594, lon: 24.2147, cmd: "EUCOM" },
+    { name: "NATO: Lielvārde Air Base, Latvia", lat: 56.7769, lon: 24.8519, cmd: "EUCOM" },
+
+    // --- РУМЫН, БОЛГАР, ГРЕК ---
+    { name: "NATO: Mihail Kogălniceanu Air Base, Romania", lat: 44.3622, lon: 28.4811, cmd: "EUCOM" },
+    { name: "NATO: Deveselu Aegis Ashore, Romania", lat: 44.0686, lon: 24.4125, cmd: "EUCOM" },
+    { name: "NATO: Souda Bay Naval Base, Greece", lat: 35.4925, lon: 24.1489, cmd: "EUCOM" },
+    { name: "NATO: Bezmer Air Base, Bulgaria", lat: 42.4547, lon: 26.3522, cmd: "EUCOM" },
+
+    // --- ТУРК (Зүүн өмнөд) ---
+    { name: "NATO: Incirlik Air Base, Turkey", lat: 37.0019, lon: 35.4258, cmd: "EUCOM" },
+    { name: "NATO: Izmir Air Station, Turkey", lat: 38.4189, lon: 27.1287, cmd: "EUCOM" },
+    { name: "NATO: Kürecik Radar Station, Turkey", lat: 38.3542, lon: 37.9408, cmd: "EUCOM" },
+
+    // --- ХОЙД ЕВРОП (Финлянд, Норвеги) ---
+    { name: "NATO: Rovaniemi Air Base, Finland", lat: 66.5647, lon: 25.8303, cmd: "EUCOM" },
+    { name: "NATO: Evenes Air Station, Norway", lat: 68.4914, lon: 16.6781, cmd: "EUCOM" },
+    { name: "NATO: Ørland Air Base, Norway", lat: 63.6989, lon: 9.6136, cmd: "EUCOM" },
+
+    // --- ИСПАНИ, ПОРТУГАЛ, БРИТАНИ ---
+    { name: "NATO: Rota Naval Station, Spain", lat: 36.6453, lon: -6.3478, cmd: "EUCOM" },
+    { name: "NATO: Morón Air Base, Spain", lat: 37.1750, lon: -5.6150, cmd: "EUCOM" },
+    { name: "NATO: Lajes Field, Azores (Portugal)", lat: 38.7617, lon: -27.0908, cmd: "EUCOM" },
+    { name: "NATO: RAF Lakenheath, UK", lat: 52.4086, lon: 0.5606, cmd: "EUCOM" },
+    { name: "NATO: RAF Mildenhall, UK", lat: 52.3639, lon: 0.4858, cmd: "EUCOM" },
+    { name: "NATO: RAF Fairford, UK", lat: 51.6822, lon: -1.7900, cmd: "EUCOM" }
+];
+
+// НАТО-гийн баазуудыг газрын зураг дээр зурах
+natoStrategicBases.forEach(base => {
+    
+    // 1. Төв цэгт байрлах жижиг тод цэг
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Хэт жижиг (1) байвал харагдахад хэцүү тул 2 болгов
+        fillColor: "#ff0066", 
+        color: "#ff0066",         
+        weight: 1,            
+        fillOpacity: 1,
+        pane: 'markerPane'    // Бусад элементүүдийн дээр харагдуулах
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 40,           
+        fillColor: "#ff0066", 
+        color: "#ff0066",  
+        weight: 0.5,          // Хүрээний зураасны зузаан
+        opacity: 0.6,         // Хүрээний тод байдал
+        fillOpacity: 0.1      // 0.05-ыг 0.1 болгож үл ялиг тодруулав
+    })
+    .bindTooltip(base.name, { // 'city.name'-ийг 'base.name' болгож засав
+        direction: 'top', 
+        className: 'city-tooltip',
+        sticky: false          // true бол тип Хулганыг дагаж хөдлөнө. false бол хөдлөхгүй
+    })
+    .addTo(map);
+});
+
+
+
+// Хятадын эх газрын цэргийн баазууд
+const mainlandChinaBases = [
+    // 1. PLAN (People's Liberation Army Navy): Тэнгисийн цэргийн флотын баазууд
+    { name: "China: Ningbo Naval Base (East Sea Fleet HQ)", lat: 29.8683, lon: 121.5440, cmd: "PLAN" },
+    { name: "China: Zhoushan Submarine Base", lat: 29.9833, lon: 122.1667, cmd: "PLAN" },
+    { name: "China: Yulin Naval Base (Nuclear Submarines)", lat: 18.2105, lon: 109.5664, cmd: "PLAN" },
+    { name: "China: Zhanjiang Base (South Sea Fleet HQ)", lat: 21.1967, lon: 110.4031, cmd: "PLAN" },
+    { name: "China: Qingdao Naval Base (North Sea Fleet HQ)", lat: 36.0671, lon: 120.3826, cmd: "PLAN" },
+
+    // 2. PLAAF (People's Liberation Army Air Force): Агаарын цэргийн баазууд
+    { name: "China: Changxing Island Airbase", lat: 39.6233, lon: 121.3611, cmd: "PLAAF" },
+    { name: "China: Suixi Airbase (Strategic Fighters)", lat: 21.3964, lon: 110.1983, cmd: "PLAAF" },
+    { name: "China: Hotan Airbase (Border Operations)", lat: 37.0384, lon: 79.8646, cmd: "PLAAF" },
+    { name: "China: Kashgar Airbase", lat: 39.5428, lon: 76.0200, cmd: "PLAAF" },
+    { name: "China: Anshan Airbase (J-20 Squadron)", lat: 41.1053, lon: 122.8539, cmd: "PLAAF" },
+    { name: "China: Qiqihar Airbase", lat: 47.2394, lon: 123.9181, cmd: "PLAAF" },
+    { name: "China: Beijing Nanyuan Airbase", lat: 39.7828, lon: 116.3878, cmd: "PLAAF" },
+
+    // 3. PLARF (People's Liberation Army Rocket Force): Пуужингийн цэргийн баазууд (Цөмийн болон дунд тусгалын пуужингууд)
+    { name: "China: Base 61 Missile HQ, Yangshuo", lat: 24.7787, lon: 110.4907, cmd: "PLARF" },
+    { name: "China: Base 62 Missile HQ, Kunming", lat: 25.0389, lon: 102.7183, cmd: "PLARF" },
+    { name: "China: Base 64 ICBM Silos, Lanzhou", lat: 36.0611, lon: 103.8319, cmd: "PLARF" },
+    { name: "China: Base 65 Missile HQ, Shenyang", lat: 41.7922, lon: 123.4328, cmd: "PLARF" },
+    { name: "China: Base 66 ICBM HQ, Luoyang", lat: 34.6578, lon: 112.4475, cmd: "PLARF" },
+    { name: "China: Yumen ICBM Silo Field", lat: 40.3500, lon: 96.5333, cmd: "PLARF" },
+    { name: "China: Hami ICBM Silo Field", lat: 42.3333, lon: 92.8500, cmd: "PLARF" },
+
+    // 4. STRAT (Strategic Support Force / Space): Сансрын холбоо, хиймэл дагуул хөөргөх болон тагнуулын төвүүд
+    { name: "China: Malan Nuclear Test Site (Lop Nur)", lat: 41.7194, lon: 88.7378, cmd: "STRAT" },
+    { name: "China: Jiuquan Satellite Launch Center", lat: 40.9578, lon: 100.2917, cmd: "STRAT" },
+    { name: "China: Taiyuan Space Launch Center", lat: 38.8486, lon: 111.6081, cmd: "STRAT" }
+];
+
+mainlandChinaBases.forEach(base => {
+    // 1. Төв цэгт байрлах жижиг тод цэг
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Хэт жижиг (1) байвал харагдахад хэцүү тул 2 болгов
+        fillColor: "#ac7339", 
+        color: "#ac7339",         
+        weight: 1,            
+        fillOpacity: 1,
+        pane: 'markerPane'    // Бусад элементүүдийн дээр харагдуулах
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 18,           
+        fillColor: "#ac7339", 
+        color: "#ffffff",  
+        weight: 2,          // Хүрээний зураасны зузаан
+        opacity: 0.3,         // Хүрээний тод байдал
+        fillOpacity: 0.1      // 0.05-ыг 0.1 болгож үл ялиг тодруулав
+    })
+    .bindTooltip(base.name, { // 'city.name'-ийг 'base.name' болгож засав
+        direction: 'top', 
+        className: 'city-tooltip',
+        sticky: false          // true бол тип Хулганыг дагаж хөдлөнө. false бол хөдлөхгүй
+    })
+    .addTo(map);
+});
+
+
+
+// Хятадын хилийн чанадад цэргийн баазууд
+const chinaBases = [
+    // 1. Тэнгисийн цэргийн ложистик ба Флот (PLAN)
+    { name: "China: Djibouti Support Base, Djibouti", lat: 11.5891, lon: 43.0492, cmd: "PLAN" },
+    { name: "China: Ream Naval Base, Cambodia", lat: 10.5011, lon: 103.6014, cmd: "PLAN" },
+    { name: "China: Gwadar Port, Pakistan", lat: 25.1075, lon: 62.3256, cmd: "PLAN" },
+    { name: "China: Hambantota Port, Sri Lanka", lat: 6.1172, lon: 81.1044, cmd: "PLAN" },
+
+    // 2. Агаарын цэргийн бааз ба Пуужингийн хамгаалалт (PLAAF)
+    { name: "China: Mischief Reef Base, Spratly Islands", lat: 9.9172, lon: 115.5333, cmd: "PLAAF" },
+    { name: "China: Fiery Cross Reef, Spratly Islands", lat: 9.5501, lon: 112.9835, cmd: "PLAAF" },
+    { name: "China: Subi Reef Airfield, Spratly Islands", lat: 10.9142, lon: 114.1184, cmd: "PLAAF" },
+    { name: "China: Woody Island, Paracel Islands", lat: 16.8395, lon: 112.3386, cmd: "PLAAF" },
+
+    // 3. Стратегийн тагнуул, Радар болон Сансрын хяналт (STRAT)
+    { name: "China: Great Coco Island Radar, Myanmar", lat: 14.1167, lon: 93.3672, cmd: "STRAT" },
+    { name: "China: Tajikistan Border Outpost, GBAO", lat: 37.3014, lon: 74.3822, cmd: "STRAT" },
+    { name: "China: Neuquén Space Station, Argentina", lat: -38.1914, lon: -70.1495, cmd: "STRAT" },
+    { name: "China: Kyaukpyu Port, Myanmar", lat: 19.4231, lon: 93.5422, cmd: "STRAT" },
+    { name: "China: Khalifa Port Facility, UAE", lat: 24.8514, lon: 54.6185, cmd: "STRAT" },
+    { name: "China: Port of Malabo, Equatorial Guinea", lat: 3.7554, lon: 8.7812, cmd: "STRAT" }
+];
+
+chinaBases.forEach(base => {
+    // 1. Төв цэгт байрлах жижиг тод цэг
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Хэт жижиг (1) байвал харагдахад хэцүү тул 2 болгов
+        fillColor: "#ac7339", 
+        color: "#ac7339",         
+        weight: 1,            
+        fillOpacity: 1,
+        pane: 'markerPane'    // Бусад элементүүдийн дээр харагдуулах
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 18,           
+        fillColor: "#ac7339", 
+        color: "#ffffff",  
+        weight: 2,          // Хүрээний зураасны зузаан
+        opacity: 0.3,         // Хүрээний тод байдал
+        fillOpacity: 0.1      // 0.05-ыг 0.1 болгож үл ялиг тодруулав
+    })
+    .bindTooltip(base.name, { // 'city.name'-ийг 'base.name' болгож засав
+        direction: 'top', 
+        className: 'city-tooltip',
+        sticky: false          // true бол тип Хулганыг дагаж хөдлөнө. false бол хөдлөхгүй
+    })
+    .addTo(map);
+});
+
+
+
+//Оросын эх газрын цэргийн баазууд
+const russianBases = [
+    // 1. VMF (Voyenno-morskoy flot): Оросын Тэнгисийн Цэргийн Флот
+    { name: "Russia: Severomorsk Naval Base (Northern Fleet HQ)", lat: 69.0689, lon: 33.4162, cmd: "VMF" },
+    { name: "Russia: Sevastopol Naval Base (Black Sea Fleet HQ)", lat: 44.6167, lon: 33.5250, cmd: "VMF" },
+    { name: "Russia: Vladivostok Naval Base (Pacific Fleet HQ)", lat: 43.1150, lon: 131.8850, cmd: "VMF" },
+    { name: "Russia: Baltiysk Naval Base (Baltic Fleet HQ)", lat: 54.6400, lon: 19.8900, cmd: "VMF" },
+    { name: "Russia: Petropavlovsk-Kamchatsky Submarine Base", lat: 52.9167, lon: 158.5000, cmd: "VMF" },
+    { name: "Russia: Tartus Naval Support Facility, Syria", lat: 34.9125, lon: 35.8672, cmd: "VMF" },
+
+    // 2. VKS (Vozdushno-kosmicheskiye sily): Агаарын болон Сансрын Хүчин (Бөмбөгдөгч онгоц, сөнөөгч онгоц)
+    { name: "Russia: Engels-2 Strategic Bomber Base (Tu-160/95)", lat: 51.4833, lon: 46.2167, cmd: "VKS" },
+    { name: "Russia: Lipetsk Air Base (Combat Training Center)", lat: 52.6417, lon: 39.4417, cmd: "VKS" },
+    { name: "Russia: Khmeimim Air Base, Syria", lat: 35.4021, lon: 35.9467, cmd: "VKS" },
+    { name: "Russia: Savasleyka Air Base (MiG-31K/Kinzhal)", lat: 55.4533, lon: 42.3117, cmd: "VKS" },
+    { name: "Russia: Belbek Air Base, Crimea", lat: 44.6917, lon: 33.5750, cmd: "VKS" },
+    { name: "Russia: Olenya Air Base (Arctic Strategic Air)", lat: 68.1500, lon: 33.3000, cmd: "VKS" },
+
+    // 3. RVSN (Raketnye voyska strategicheskogo naznacheniya): Стратегийн Пуужингийн Хүчин (Цөмийн зэвсэг, тив алгасах пуужингууд)
+    { name: "Russia: Kozelsk Rocket Division (Yars/Silo)", lat: 54.0417, lon: 35.7833, cmd: "RVSN" },
+    { name: "Russia: Tatishchevo Missile Base (Topol-M Silos)", lat: 51.6667, lon: 45.7000, cmd: "RVSN" },
+    { name: "Russia: Uzhur Missile Division (Sarmat/Satan)", lat: 55.2833, lon: 89.8333, cmd: "RVSN" },
+    { name: "Russia: Dombarovsky Missile Site (Avangard HGV)", lat: 51.0500, lon: 59.8500, cmd: "RVSN" },
+    { name: "Russia: Yoskar-Ola Missile Division (Mobile Yars)", lat: 56.5500, lon: 48.0500, cmd: "RVSN" },
+
+    // 4. STRAT (Strategic/Foreign): Хилийн чанад дахь болон сансрын холбоо, туршилтын баазууд
+    { name: "Russia: Plesetsk Cosmodrome (Military Space)", lat: 62.9256, lon: 40.5778, cmd: "STRAT" },
+    { name: "Russia: Kapustin Yar Missile Test Range", lat: 48.5833, lon: 45.7167, cmd: "STRAT" },
+	
+	// 1. АРКТИК (Хойд мөсөн далайн хамгаалалт)
+    { name: "Russia: Nagurskoye Airbase (Arctic Trefoil)", lat: 80.8031, lon: 47.4417, cmd: "VKS" },
+    { name: "Russia: Temp Airbase (Kotelny Island)", lat: 75.7533, lon: 137.6417, cmd: "VKS" },
+    { name: "Russia: Rogachevo Airbase (Novaya Zemlya)", lat: 71.6167, lon: 52.4833, cmd: "VKS" },
+
+    // 2. АЛС ДОРНОД (Номхон далайн флот ба хилийн хамгаалалт)
+    { name: "Russia: Fokino Naval Base (Pacific Fleet Submarines)", lat: 42.9231, lon: 132.3850, cmd: "VMF" },
+    { name: "Russia: Ukrainka Airbase (Tu-95 Strategic Bombers)", lat: 51.1681, lon: 128.4414, cmd: "VKS" },
+    { name: "Russia: Komsomolsk-on-Amur Airbase (Su-57 Training)", lat: 50.6017, lon: 137.0817, cmd: "VKS" },
+
+    // 3. СТРАТЕГИЙН ПУУЖИНГИЙН НЭМЭЛТ ХҮЧИН (RVSN)
+    { name: "Russia: Teykovo Missile Division (Yars/Topol-M Mobile)", lat: 56.8417, lon: 40.5500, cmd: "RVSN" },
+    { name: "Russia: Irkutsk Missile Division (Strategic Mobile)", lat: 52.4167, lon: 104.3167, cmd: "RVSN" },
+    { name: "Russia: Barnaul Missile Division (Altay Region)", lat: 53.3467, lon: 83.7767, cmd: "RVSN" },
+    { name: "Russia: Vypolzovo Missile Division", lat: 57.8517, lon: 33.6817, cmd: "RVSN" },
+
+    // 4. ТАГНУУЛ, РАДАР БА ТУСГАЙ ОБЪЕКТУУД (STRAT)
+    { name: "Russia: Voronezh-DM Radar Station (Krasnoyarsk)", lat: 56.1317, lon: 92.2167, cmd: "STRAT" },
+    { name: "Russia: Voronezh-VP Radar Station (Irkutsk)", lat: 52.8517, lon: 102.7833, cmd: "STRAT" },
+    { name: "Russia: Mount Yamantau (Strategic Command Bunker)", lat: 54.2589, lon: 58.1014, cmd: "STRAT" },
+    { name: "Russia: Chekhov-2 (General Staff Command Center)", lat: 55.1500, lon: 37.4667, cmd: "STRAT" },
+    { name: "Russia: Severodvinsk Naval Shipyard (Submarine Hub)", lat: 64.5750, lon: 39.8517, cmd: "VMF" },
+
+    // 5. ЕВРОПЫН ХЭСЭГ (Баруун ба Өмнөд тойрог)
+    { name: "Russia: Chkalovsk Airbase (Kaliningrad Exclave)", lat: 54.7667, lon: 20.4000, cmd: "VKS" },
+    { name: "Russia: Solytsy Airbase (Tu-22M3 Bombers)", lat: 58.1517, lon: 30.3317, cmd: "VKS" },
+    { name: "Russia: Shaykovka Airbase (Strategic Aviation)", lat: 54.2267, lon: 34.3633, cmd: "VKS" }
+];
+
+russianBases.forEach(base => {
+    // 1. Төв цэгт байрлах жижиг тод цэг
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Хэт жижиг (1) байвал харагдахад хэцүү тул 2 болгов
+        fillColor: "#ffffff", 
+        color: "#ffffff",         
+        weight: 1,            
+        fillOpacity: 1,
+        pane: 'markerPane'    // Бусад элементүүдийн дээр харагдуулах
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 18,           
+        fillColor: "#ffffff", 
+        color: "#ff1a8c",  
+        weight: 2,          // Хүрээний зураасны зузаан
+        opacity: 0.3,         // Хүрээний тод байдал
+        fillOpacity: 0.1      // 0.05-ыг 0.1 болгож үл ялиг тодруулав
+    })
+    .bindTooltip(base.name, { // 'city.name'-ийг 'base.name' болгож засав
+        direction: 'top', 
+        className: 'city-tooltip',
+        sticky: false          // true бол тип Хулганыг дагаж хөдлөнө. false бол хөдлөхгүй
+    })
+    .addTo(map);
+});
+
+
+
+// Оросын хилийн чанадад цэргийн бааз, байгууламжууд
+const russianOverseasBases = [
+    // 1. СИРИ (Ойрхи Дорнод дахь стратегийн гол түшиц газар)
+    { name: "Russia: Tartus Naval Logistics Facility, Syria", lat: 34.9125, lon: 35.8672, cmd: "VMF" },
+    { name: "Russia: Khmeimim Air Base, Syria", lat: 35.4021, lon: 35.9467, cmd: "VKS" },
+
+    // 2. ТӨВ АЗИ (Хуучин ЗХУ-ын бүрэлдэхүүнд байсан орнууд)
+    { name: "Russia: 201st Military Base, Tajikistan (Dushanbe)", lat: 38.5333, lon: 68.7833, cmd: "STRAT" },
+    { name: "Russia: Kant Air Base, Kyrgyzstan", lat: 42.8533, lon: 74.8469, cmd: "VKS" },
+    { name: "Russia: Sary Shagan Test Range, Kazakhstan", lat: 46.3833, lon: 72.8667, cmd: "STRAT" },
+    { name: "Russia: Baikonur Cosmodrome, Kazakhstan", lat: 45.9645, lon: 63.3052, cmd: "STRAT" },
+
+    // 3. КАВКАЗЫН БҮС (Стратегийн хяналт)
+    { name: "Russia: 102nd Military Base, Gyumri, Armenia", lat: 40.7833, lon: 43.8333, cmd: "STRAT" },
+    { name: "Russia: 4th Military Base, South Ossetia (Tskhinvali)", lat: 42.2256, lon: 43.9667, cmd: "STRAT" },
+    { name: "Russia: 7th Military Base, Abkhazia (Gudauta)", lat: 43.1000, lon: 40.6333, cmd: "STRAT" },
+
+    // 4. ЕВРОП (Зүүн Европ дахь хяналт)
+    { name: "Russia: Baranovichi Radar Station, Belarus", lat: 52.8533, lon: 26.4833, cmd: "STRAT" },
+    { name: "Russia: Vileyka Naval Communications Center, Belarus", lat: 54.4667, lon: 26.7500, cmd: "VMF" },
+    { name: "Russia: obasna Ammunition Depot, Transnistria (Moldova)", lat: 47.7556, lon: 29.2139, cmd: "STRAT" },
+
+    // 5. АФРИК БА БУСАД (Шинээр үүсэж буй болон тагнуулын цэгүүд)
+    { name: "Russia: Port Sudan Naval Base (Planned), Sudan", lat: 19.6100, lon: 37.2200, cmd: "VMF" },
+    { name: "Russia: Lourdes SIGINT Facility (Reported Reactivation), Cuba", lat: 22.9947, lon: -82.4794, cmd: "STRAT" },
+    { name: "Russia: Cam Ranh Bay Support Facility, Vietnam", lat: 11.9167, lon: 109.1667, cmd: "VMF" }
+];
+
+russianOverseasBases.forEach(base => {
+    // 1. Төв цэгт байрлах жижиг тод цэг
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Хэт жижиг (1) байвал харагдахад хэцүү тул 2 болгов
+        fillColor: "#ffffff", 
+        color: "#ffffff",         
+        weight: 1,            
+        fillOpacity: 1,
+        pane: 'markerPane'    // Бусад элементүүдийн дээр харагдуулах
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 18,           
+        fillColor: "#ffffff", 
+        color: "#ff1a8c",  
+        weight: 2,          // Хүрээний зураасны зузаан
+        opacity: 0.3,         // Хүрээний тод байдал
+        fillOpacity: 0.1      // 0.05-ыг 0.1 болгож үл ялиг тодруулав
+    })
+    .bindTooltip(base.name, { // 'city.name'-ийг 'base.name' болгож засав
+        direction: 'top', 
+        className: 'city-tooltip',
+        sticky: false          // true бол тип Хулганыг дагаж хөдлөнө. false бол хөдлөхгүй
+    })
+    .addTo(map);
+});
+
+
+
+// Ираны цэргийн баазууд
+const iranBases = [
+    // 1. ТЭНГИСИЙН ЦЭРГИЙН БААЗУУД (Ормузын хоолой ба Персийн булан)
+    { name: "Iran: Bandar Abbas Naval Base (IRGC/Artesh HQ)", lat: 27.1500, lon: 56.2167, cmd: "PLAN" },
+    { name: "Iran: Bushehr Naval Base", lat: 28.9333, lon: 50.8333, cmd: "PLAN" },
+    { name: "Iran: Chabahar Naval Base (Gulf of Oman)", lat: 25.2833, lon: 60.6167, cmd: "PLAN" },
+    { name: "Iran: Jask Naval Base", lat: 25.6500, lon: 57.7833, cmd: "PLAN" },
+    { name: "Iran: Kish Island Base", lat: 26.5256, lon: 53.9889, cmd: "PLAN" },
+
+    // 2. АГААРЫН ЦЭРГИЙН БААЗУУД (IRIAF)
+    { name: "Iran: Mehrabad Airbase, Tehran", lat: 35.6883, lon: 51.3147, cmd: "PLAAF" },
+    { name: "Iran: Isfahan Airbase (F-14 Tomcat Hub)", lat: 32.7508, lon: 51.8614, cmd: "PLAAF" },
+    { name: "Iran: Tabriz Airbase (Northwest Defense)", lat: 38.1256, lon: 46.2417, cmd: "PLAAF" },
+    { name: "Iran: Shiraz Airbase", lat: 29.5392, lon: 52.5897, cmd: "PLAAF" },
+    { name: "Iran: Hamadan Airbase (Nojeh)", lat: 35.2117, lon: 48.6522, cmd: "PLAAF" },
+
+    // 3. ПУУЖИНГИЙН БААЗУУД БА ГАЗАР ДООРХ ХОТХОНУУД (IRGC Missile Force)
+    { name: "Iran: Semnan Missile Launch Site", lat: 35.2333, lon: 53.9167, cmd: "PLARF" },
+    { name: "Iran: Kermanshah Missile Complex", lat: 34.3500, lon: 47.1167, cmd: "PLARF" },
+    { name: "Iran: Tabriz Underground Missile City", lat: 38.0833, lon: 46.2833, cmd: "PLARF" },
+    { name: "Iran: Bakhtaran Missile Base", lat: 34.3167, lon: 47.0667, cmd: "PLARF" },
+
+    // 4. ЦӨМИЙН БА СТРАТЕГИЙН ОБЪЕКТУУД (STRAT)
+    { name: "Iran: Natanz Uranium Enrichment Plant", lat: 33.7250, lon: 51.7250, cmd: "STRAT" },
+    { name: "Iran: Fordo Fuel Enrichment Plant (Underground)", lat: 34.8847, lon: 50.9958, cmd: "STRAT" },
+    { name: "Iran: Arak Heavy Water Plant", lat: 34.1136, lon: 49.2411, cmd: "STRAT" },
+    { name: "Iran: Bushehr Nuclear Power Plant", lat: 28.8314, lon: 50.8864, cmd: "STRAT" },
+    { name: "Iran: Anarak Nuclear Waste Site", lat: 33.3117, lon: 53.7000, cmd: "STRAT" }
+];
+
+iranBases.forEach(base => {
+    // 1. Төв цэгт байрлах жижиг тод цэг
+    L.circleMarker([base.lat, base.lon], {
+        radius: 1,            // Хэт жижиг (1) байвал харагдахад хэцүү тул 2 болгов
+        fillColor: "#ffffff", 
+        color: "#33ff33",         
+        weight: 1,            
+        fillOpacity: 1,
+        pane: 'markerPane'    // Бусад элементүүдийн дээр харагдуулах
+    }).addTo(map);
+
+    // 2. Гадна талын том бүдэг тойрог (Радарын хүрээ)
+    L.circleMarker([base.lat, base.lon], {
+        radius: 18,           
+        fillColor: "#ffffff", 
+        color: "#33ff33",  
+        weight: 2,          // Хүрээний зураасны зузаан
+        opacity: 0.3,         // Хүрээний тод байдал
+        fillOpacity: 0.1      // 0.05-ыг 0.1 болгож үл ялиг тодруулав
+    })
+    .bindTooltip(base.name, { // 'city.name'-ийг 'base.name' болгож засав
+        direction: 'top', 
+        className: 'city-tooltip',
+        sticky: false          // true бол тип Хулганыг дагаж хөдлөнө. false бол хөдлөхгүй
+    })
+    .addTo(map);
+});
+
+
+
+const cities = [
+	// Монгол улс, аймгийн төвүүд
+	{ name: "Ulaanbaatar", lat: 47.8864, lon: 106.9057 },
+	{ name: "Arvaikheer (Uvurkhangai)", lat: 46.2633, lon: 102.7750 },
+    { name: "Altai (Gobi-Altai)", lat: 46.3722, lon: 96.2583 },
+    { name: "Baruun-Urt (Sukhbaatar)", lat: 46.6806, lon: 113.2792 },
+    { name: "Bayan-Olgii", lat: 48.9667, lon: 89.9667 },
+    { name: "Bulgan", lat: 48.8125, lon: 103.5347 },
+    { name: "Dalanzadgad (Umnugobi)", lat: 43.5708, lon: 104.4250 },
+    { name: "Darkhan (Darkhan-Uul)", lat: 49.4867, lon: 105.9228 },
+    { name: "Choibalsan (Dornod)", lat: 48.0775, lon: 114.5350 },
+    { name: "Sainshand (Dornogobi)", lat: 44.8850, lon: 110.1364 },
+    { name: "Zuunmod (Tuv)", lat: 47.7069, lon: 106.9528 },
+    { name: "Mandalgovi (Dundgobi)", lat: 45.7625, lon: 106.2708 },
+    { name: "Murun (Khuvsgul)", lat: 49.6342, lon: 100.1625 },
+    { name: "Ulaangom (Uvs)", lat: 49.9811, lon: 92.0667 },
+    { name: "Uliastai (Zavkhan)", lat: 47.7431, lon: 96.8444 },
+    { name: "Khovd", lat: 48.0056, lon: 91.6419 },
+    { name: "Tsetserleg (Arkhangai)", lat: 47.4750, lon: 101.4483 },
+    { name: "Chinggis City (Khentii)", lat: 47.3233, lon: 110.6622 },
+    { name: "Sukhbaatar (Selenge)", lat: 50.2314, lon: 106.2078 },
+    { name: "Erdenet (Orkhon)", lat: 49.0333, lon: 104.0833 },
+    { name: "Choir (Gobisumber)", lat: 46.3611, lon: 108.3611 },
+    { name: "Ereentsav", lat: 49.5242, lon: 116.7114 },
+	
+	//АНУ, муж улсуудын нийслэл
+    { name: "New York", lat: 40.7128, lon: -74.0060 },
+    { name: "Washington D.C.", lat: 38.8951, lon: -77.0364 },
+    { name: "Los Angeles", lat: 34.0522, lon: -118.2437 },	
+	{ name: "Montgomery, AL", lat: 32.3668, lon: -86.3006 },
+    { name: "Juneau, AK", lat: 58.3019, lon: -134.4197 },
+    { name: "Phoenix, AZ", lat: 33.4484, lon: -112.0740 },
+    { name: "Little Rock, AR", lat: 34.7465, lon: -92.2896 },
+    { name: "Sacramento, CA", lat: 38.5816, lon: -121.4944 },
+    { name: "Denver, CO", lat: 39.7392, lon: -104.9903 },
+    { name: "Hartford, CT", lat: 41.7637, lon: -72.6851 },
+    { name: "Dover, DE", lat: 39.1582, lon: -75.5244 },
+    { name: "Tallahassee, FL", lat: 30.4383, lon: -84.2807 },
+    { name: "Atlanta, GA", lat: 33.7490, lon: -84.3880 },
+    { name: "Honolulu, HI", lat: 21.3069, lon: -157.8583 },
+    { name: "Boise, ID", lat: 43.6150, lon: -116.2023 },
+    { name: "Springfield, IL", lat: 39.7817, lon: -89.6501 },
+    { name: "Indianapolis, IN", lat: 39.7684, lon: -86.1581 },
+    { name: "Des Moines, IA", lat: 41.5868, lon: -93.6250 },
+    { name: "Topeka, KS", lat: 39.0473, lon: -95.6752 },
+    { name: "Frankfort, KY", lat: 38.1973, lon: -84.8631 },
+    { name: "Baton Rouge, LA", lat: 30.4515, lon: -91.1871 },
+    { name: "Augusta, ME", lat: 44.3106, lon: -69.7795 },
+    { name: "Annapolis, MD", lat: 38.9784, lon: -76.4922 },
+    { name: "Boston, MA", lat: 42.3601, lon: -71.0589 },
+    { name: "Lansing, MI", lat: 42.7325, lon: -84.5555 },
+    { name: "St. Paul, MN", lat: 44.9537, lon: -93.0900 },
+    { name: "Jackson, MS", lat: 32.2988, lon: -90.1848 },
+    { name: "Jefferson City, MO", lat: 38.5767, lon: -92.1735 },
+    { name: "Helena, MT", lat: 46.5891, lon: -112.0391 },
+    { name: "Lincoln, NE", lat: 40.8136, lon: -96.7026 },
+    { name: "Carson City, NV", lat: 39.1638, lon: -119.7674 },
+    { name: "Concord, NH", lat: 43.2081, lon: -71.5375 },
+    { name: "Trenton, NJ", lat: 40.2171, lon: -74.7429 },
+    { name: "Santa Fe, NM", lat: 35.6870, lon: -105.9378 },
+    { name: "Albany, NY", lat: 42.6526, lon: -73.7562 },
+    { name: "Raleigh, NC", lat: 35.7796, lon: -78.6382 },
+    { name: "Bismarck, ND", lat: 46.8083, lon: -100.7837 },
+    { name: "Columbus, OH", lat: 39.9612, lon: -82.9988 },
+    { name: "Oklahoma City, OK", lat: 35.4676, lon: -97.5164 },
+    { name: "Salem, OR", lat: 44.9429, lon: -123.0351 },
+    { name: "Harrisburg, PA", lat: 40.2732, lon: -76.8867 },
+    { name: "Providence, RI", lat: 41.8240, lon: -71.4128 },
+    { name: "Columbia, SC", lat: 34.0007, lon: -81.0348 },
+    { name: "Pierre, SD", lat: 44.3673, lon: -100.3510 },
+    { name: "Nashville, TN", lat: 36.1627, lon: -86.7816 },
+    { name: "Austin, TX", lat: 30.2672, lon: -97.7431 },
+    { name: "Salt Lake City, UT", lat: 40.7608, lon: -111.8910 },
+    { name: "Montpelier, VT", lat: 44.2601, lon: -72.5754 },
+    { name: "Richmond, VA", lat: 37.5407, lon: -77.4360 },
+    { name: "Olympia, WA", lat: 47.0379, lon: -122.9007 },
+    { name: "Charleston, WV", lat: 38.3498, lon: -81.6326 },
+    { name: "Madison, WI", lat: 43.0731, lon: -89.4012 },
+    { name: "Cheyenne, WY", lat: 41.1400, lon: -104.8202 },
+	
+	// Канад
+	{ name: "Ottawa, ON", lat: 45.4215, lon: -75.6972 },
+    { name: "Toronto, ON", lat: 43.6532, lon: -79.3832 },
+    { name: "Montreal, QC", lat: 45.5017, lon: -73.5673 },
+    { name: "Quebec City, QC", lat: 46.8139, lon: -71.2080 },
+    { name: "Vancouver, BC", lat: 49.2827, lon: -123.1207 },
+    { name: "Victoria, BC", lat: 48.4284, lon: -123.3656 },
+    { name: "Edmonton, AB", lat: 53.5461, lon: -113.4938 },
+    { name: "Calgary, AB", lat: 51.0447, lon: -114.0719 },
+    { name: "Winnipeg, MB", lat: 49.8951, lon: -97.1384 },
+    { name: "Regina, SK", lat: 50.4452, lon: -104.6189 },
+    { name: "Saskatoon, SK", lat: 52.1332, lon: -106.6700 },
+    { name: "Halifax, NS", lat: 44.6488, lon: -63.5752 },
+    { name: "Fredericton, NB", lat: 45.9636, lon: -66.6431 },
+    { name: "St. John's, NL", lat: 47.5615, lon: -52.7126 },
+    { name: "Charlottetown, PE", lat: 46.2382, lon: -63.1311 },
+    { name: "Whitehorse, YT", lat: 60.7212, lon: -135.0568 },
+    { name: "Yellowknife, NT", lat: 62.4540, lon: -114.3718 },
+    { name: "Iqaluit, NU", lat: 63.7467, lon: -68.5170 }
+];
+
+// Хотуудыг зураг дээр дугуй цэгээр зурах
+cities.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,              // Цэгийн хэмжээ
+        fillColor: "#00d4ff",   // Дотор талын өнгө (тод цэнхэр)
+        color: "#fff",          // Хүрээний өнгө
+        weight: 0,            // Хүрээний зузаан
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { direction: 'top', className: 'city-tooltip' }) // Хот дээр очиход нэр нь харагдана
+    .addTo(map);
+});
+
+
+
+const ukrcities = [
+    { name: "Kyiv", lat: 50.4501, lon: 30.5234, type: "Capital" },
+    { name: "Chernihiv", lat: 51.4982, lon: 31.2893, type: "Strategic" },
+    { name: "Sumy", lat: 50.9077, lon: 34.7981, type: "Frontier" },
+    { name: "Kharkiv", lat: 49.9935, lon: 36.2304, type: "Strategic" },
+    { name: "Donetsk", lat: 48.0159, lon: 37.8028, type: "Contested" },
+    { name: "Luhansk", lat: 48.5740, lon: 39.3078, type: "Contested" },
+    { name: "Bakhmut", lat: 48.5956, lon: 38.0084, type: "Frontline" },
+    { name: "Avdiivka", lat: 48.1451, lon: 37.7448, type: "Frontline" },
+    { name: "Dnipro", lat: 48.4647, lon: 35.0462, type: "Logistics Hub" },
+    { name: "Odesa", lat: 46.4825, lon: 30.7233, type: "Port" },
+    { name: "Kherson", lat: 46.6354, lon: 32.6169, type: "Strategic" },
+    { name: "Mykolaiv", lat: 46.9750, lon: 31.9946, type: "Port" },
+    { name: "Mariupol", lat: 47.0971, lon: 37.5433, type: "Frontline" },
+    { name: "Zaporizhzhia", lat: 47.8388, lon: 35.1396, type: "Energy Hub" },
+    { name: "Sevastopol (Crimea)", lat: 44.6167, lon: 33.5250, type: "Naval Base" },
+    { name: "Lviv", lat: 49.8397, lon: 24.0297, type: "Logistics Hub" },
+    { name: "Vinnytsia", lat: 49.2331, lon: 28.4682, type: "Strategic" },
+    { name: "Ivano-Frankivsk", lat: 48.9226, lon: 24.7111, type: "Strategic" }
+];
+
+ukrcities.forEach(city => {
+    // Үндсэн цэг
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,            
+        fillColor: "#33ff33", 
+        color: "#116611",  // Хүрээг нь арай бараан болгож ялгав
+        weight: 1,      
+        fillOpacity: 1      // Цэгээ илүү тод харагдуулна
+    })
+    .bindTooltip(`<b>${city.name}</b><br>${city.type}`, { // Төрлийг нь бас харуулж болно
+        direction: 'top', 
+        className: 'city-tooltip',
+    })
+    .addTo(map);
+
+    // Нэмэлт: Хэрэв "Frontline" эсвэл "Contested" бол радар эффект нэмэх
+    if (city.type === "Frontline" || city.type === "Contested") {
+        L.circleMarker([city.lat, city.lon], {
+            radius: 15, 
+            color: "#ff3300", 
+            fillColor: "#ff3300",
+            fillOpacity: 0.1,
+            weight: 0.5,
+            className: 'radar-pulse' 
+        }).addTo(map);
+    }
+});
+
+
+
+// ЕВРОП ТИВ НИЙСЛЭЛҮҮД
+const europeanCapitals = [
+    { name: "Tirana, Albania", lat: 41.3275, lon: 19.8187 },
+    { name: "Andorra la Vella, Andorra", lat: 42.5063, lon: 1.5218 },
+    { name: "Vienna, Austria", lat: 48.2082, lon: 16.3738 },
+    { name: "Minsk, Belarus", lat: 53.9006, lon: 27.5590 },
+    { name: "Brussels, Belgium", lat: 50.8503, lon: 4.3517 },
+    { name: "Sarajevo, Bosnia and Herzegovina", lat: 43.8563, lon: 18.4131 },
+    { name: "Sofia, Bulgaria", lat: 42.6977, lon: 23.3219 },
+    { name: "Zagreb, Croatia", lat: 45.8150, lon: 15.9819 },
+    { name: "Nicosia, Cyprus", lat: 35.1856, lon: 33.3823 },
+    { name: "Prague, Czech Republic", lat: 50.0755, lon: 14.4378 },
+    { name: "Copenhagen, Denmark", lat: 55.6761, lon: 12.5683 },
+    { name: "Tallinn, Estonia", lat: 59.4370, lon: 24.7535 },
+    { name: "Helsinki, Finland", lat: 60.1699, lon: 24.9384 },
+    { name: "Paris, France", lat: 48.8566, lon: 2.3522 },
+    { name: "Berlin, Germany", lat: 52.5200, lon: 13.4050 },
+    { name: "Athens, Greece", lat: 37.9838, lon: 23.7275 },
+    { name: "Budapest, Hungary", lat: 47.4979, lon: 19.0402 },
+    { name: "Reykjavik, Iceland", lat: 64.1466, lon: -21.9426 },
+    { name: "Dublin, Ireland", lat: 53.3498, lon: -6.2603 },
+    { name: "Rome, Italy", lat: 41.9028, lon: 12.4964 },
+    { name: "Pristina, Kosovo", lat: 42.6629, lon: 21.1655 },
+    { name: "Riga, Latvia", lat: 56.9496, lon: 24.1052 },
+    { name: "Vaduz, Liechtenstein", lat: 47.1410, lon: 9.5209 },
+    { name: "Vilnius, Lithuania", lat: 54.6872, lon: 25.2797 },
+    { name: "Luxembourg City, Luxembourg", lat: 49.6116, lon: 6.1319 },
+    { name: "Valletta, Malta", lat: 35.8992, lon: 14.5141 },
+    { name: "Chisinau, Moldova", lat: 47.0105, lon: 28.8638 },
+    { name: "Monaco", lat: 43.7384, lon: 7.4246 },
+    { name: "Podgorica, Montenegro", lat: 42.4304, lon: 19.2594 },
+    { name: "Amsterdam, Netherlands", lat: 52.3676, lon: 4.9041 },
+    { name: "Skopje, North Macedonia", lat: 41.9973, lon: 21.4280 },
+    { name: "Oslo, Norway", lat: 59.9139, lon: 10.7522 },
+    { name: "Warsaw, Poland", lat: 52.2297, lon: 21.0122 },
+    { name: "Lisbon, Portugal", lat: 38.7223, lon: -9.1393 },
+    { name: "Bucharest, Romania", lat: 44.4268, lon: 26.1025 },
+    { name: "Moscow, Russia", lat: 55.7558, lon: 37.6173 },
+    { name: "San Marino", lat: 43.9424, lon: 12.4578 },
+    { name: "Belgrade, Serbia", lat: 44.7866, lon: 20.4489 },
+    { name: "Bratislava, Slovakia", lat: 48.1486, lon: 17.1077 },
+    { name: "Ljubljana, Slovenia", lat: 46.0569, lon: 14.5058 },
+    { name: "Madrid, Spain", lat: 40.4168, lon: -3.7038 },
+    { name: "Stockholm, Sweden", lat: 59.3293, lon: 18.0686 },
+    { name: "Bern, Switzerland", lat: 46.9480, lon: 7.4474 },
+    { name: "London, United Kingdom", lat: 51.5074, lon: -0.1278 },
+    { name: "Kiev, Ukraine", lat: 50.4501, lon: 30.5234 },
+    { name: "Vatican City", lat: 41.9029, lon: 12.4534 },
+
+	    // Бусад бүс нутаг
+    { name: "Nuuk, Greenland", lat: 64.1835, lon: -51.7216 }
+];
+
+// Хотуудыг нэмэх функц (Таны кодын cities массив дотор нэмж болно)
+europeanCapitals.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,
+        fillColor: "#00d4ff",
+        color: "#fff",
+        weight: 0,
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { 
+        direction: 'top', 
+        className: 'city-label',
+        offset: [0, -5]
+    })
+    .addTo(map);
+});
+
+
+
+// АЗИ ТИВ НИЙСЛЭЛҮҮД
+const asianCapitals = [
+
+	// --- ЯПОН УЛС (Томоохон хотууд) ---
+    { name: "Tokyo, Japan", lat: 35.6762, lon: 139.6503 },
+    { name: "Osaka, Japan", lat: 34.6937, lon: 135.5023 },
+    { name: "Yokohama, Japan", lat: 35.4437, lon: 139.6389 },
+    { name: "Nagoya, Japan", lat: 35.1815, lon: 136.9066 },
+    { name: "Sapporo, Japan", lat: 43.0611, lon: 141.3544 },
+    { name: "Fukuoka, Japan", lat: 33.5904, lon: 130.4017 },
+    { name: "Hiroshima, Japan", lat: 34.3853, lon: 132.4553 },
+    { name: "Kyoto, Japan", lat: 35.0116, lon: 135.7681 },
+    { name: "Sendai, Japan", lat: 38.2682, lon: 140.8694 },
+
+    // --- ӨМНӨД СОЛОНГОС (Томоохон хотууд) ---
+    { name: "Seoul, South Korea", lat: 37.5665, lon: 126.9780 },
+    { name: "Busan, South Korea", lat: 35.1796, lon: 129.0756 },
+    { name: "Incheon, South Korea", lat: 37.4563, lon: 126.7052 },
+    { name: "Daegu, South Korea", lat: 35.8714, lon: 128.6014 },
+    { name: "Daejeon, South Korea", lat: 36.3504, lon: 127.3845 },
+    { name: "Gwangju, South Korea", lat: 35.1595, lon: 126.8526 },
+    { name: "Ulsan, South Korea", lat: 35.5384, lon: 129.3114 },
+    { name: "Jeju, South Korea", lat: 33.4996, lon: 126.5312 },
+
+    // --- ХЯТАД УЛС (Томоохон хотууд) ---
+    { name: "Beijing, China", lat: 39.9042, lon: 116.4074 },
+    { name: "Shanghai, China", lat: 31.2304, lon: 121.4737 },
+    { name: "Guangzhou, China", lat: 23.1291, lon: 113.2644 },
+    { name: "Shenzhen, China", lat: 22.5431, lon: 114.0579 },
+    { name: "Chengdu, China", lat: 30.5728, lon: 104.0668 },
+    { name: "Chongqing, China", lat: 29.5630, lon: 106.5516 },
+    { name: "Wuhan, China", lat: 30.5928, lon: 114.3055 },
+    { name: "Xi'an, China", lat: 34.3416, lon: 108.9398 },
+    { name: "Nanjing, China", lat: 32.0603, lon: 118.7969 },
+    { name: "Harbin, China", lat: 45.8038, lon: 126.5350 },
+    { name: "Erenhot, China", lat: 43.6534, lon: 111.9740 },
+
+	// --- ОРОСЫН ХОЛБООНЫ УЛС (Томоохон хотууд) ---
+    { name: "Moscow, Russia", lat: 55.7558, lon: 37.6173 },
+    { name: "Saint Petersburg, Russia", lat: 59.9311, lon: 30.3609 },
+    { name: "Novosibirsk, Russia", lat: 55.0084, lon: 82.9357 },
+    { name: "Yekaterinburg, Russia", lat: 56.8389, lon: 60.6057 },
+    { name: "Kazan, Russia", lat: 55.8304, lon: 49.0661 },
+    { name: "Vladivostok, Russia", lat: 43.1198, lon: 131.8869 },
+    { name: "Irkutsk, Russia", lat: 52.2870, lon: 104.2810 },
+    { name: "Ulan-Ude, Russia", lat: 51.8235, lon: 107.6065 },
+    { name: "Krasnoyarsk, Russia", lat: 56.0153, lon: 92.8932 },
+    { name: "Chelyabinsk, Russia", lat: 55.1644, lon: 61.4368 },
+    { name: "Sochi, Russia", lat: 43.6028, lon: 39.7233 },
+	
+    { name: "Kabul, Afghanistan", lat: 34.5553, lon: 69.2075 },
+    { name: "Yerevan, Armenia", lat: 40.1792, lon: 44.5152 },
+    { name: "Baku, Azerbaijan", lat: 40.4093, lon: 49.8671 },
+    { name: "Manama, Bahrain", lat: 26.2285, lon: 50.5860 },
+    { name: "Dhaka, Bangladesh", lat: 23.8103, lon: 90.4125 },
+    { name: "Thimphu, Bhutan", lat: 27.4727, lon: 89.6393 },
+    { name: "Bandar Seri Begawan, Brunei", lat: 4.8902, lon: 114.9404 },
+    { name: "Phnom Penh, Cambodia", lat: 11.5564, lon: 104.9282 },
+    { name: "Beijing, China", lat: 39.9042, lon: 116.4074 },
+    { name: "Tbilisi, Georgia", lat: 41.7151, lon: 44.8271 },
+    { name: "New Delhi, India", lat: 28.6139, lon: 77.2090 },
+    { name: "Jakarta, Indonesia", lat: -6.2088, lon: 106.8456 },
+    { name: "Tehran, Iran", lat: 35.6892, lon: 51.3890 },
+    { name: "Baghdad, Iraq", lat: 33.3152, lon: 44.3661 },
+    { name: "Jerusalem, Israel", lat: 31.7683, lon: 35.2137 },
+    { name: "Tokyo, Japan", lat: 35.6762, lon: 139.6503 },
+    { name: "Amman, Jordan", lat: 31.9454, lon: 35.9284 },
+    { name: "Astana, Kazakhstan", lat: 51.1605, lon: 71.4704 },
+    { name: "Kuwait City, Kuwait", lat: 29.3759, lon: 47.9774 },
+    { name: "Bishkek, Kyrgyzstan", lat: 42.8746, lon: 74.5698 },
+    { name: "Vientiane, Laos", lat: 17.9757, lon: 102.6331 },
+    { name: "Beirut, Lebanon", lat: 33.8938, lon: 35.5018 },
+    { name: "Kuala Lumpur, Malaysia", lat: 3.1390, lon: 101.6869 },
+    { name: "Male, Maldives", lat: 4.1755, lon: 73.5093 },
+    { name: "Naypyidaw, Myanmar", lat: 19.7633, lon: 96.0785 },
+    { name: "Kathmandu, Nepal", lat: 27.7172, lon: 85.3240 },
+    { name: "Pyongyang, North Korea", lat: 39.0392, lon: 125.7625 },
+    { name: "Muscat, Oman", lat: 23.5859, lon: 58.4059 },
+    { name: "Islamabad, Pakistan", lat: 33.6844, lon: 73.0479 },
+    { name: "Manila, Philippines", lat: 14.5995, lon: 120.9842 },
+    { name: "Doha, Qatar", lat: 25.2854, lon: 51.5310 },
+    { name: "Riyadh, Saudi Arabia", lat: 24.7136, lon: 46.6753 },
+    { name: "Singapore, Singapore", lat: 1.3521, lon: 103.8198 },
+    { name: "Seoul, South Korea", lat: 37.5665, lon: 126.9780 },
+    { name: "Sri Jayawardenepura Kotte, Sri Lanka", lat: 6.9271, lon: 79.8612 },
+    { name: "Damascus, Syria", lat: 33.5138, lon: 36.2765 },
+    { name: "Taipei, Taiwan", lat: 25.0330, lon: 121.5654 },
+    { name: "Dushanbe, Tajikistan", lat: 38.5598, lon: 68.7870 },
+    { name: "Bangkok, Thailand", lat: 13.7563, lon: 100.5018 },
+    { name: "Dili, Timor-Leste", lat: -8.5568, lon: 125.5603 },
+    { name: "Ankara, Turkey", lat: 39.9334, lon: 32.8597 },
+    { name: "Ashgabat, Turkmenistan", lat: 37.9601, lon: 58.3262 },
+    { name: "Abu Dhabi, UAE", lat: 24.4539, lon: 54.3773 },
+    { name: "Tashkent, Uzbekistan", lat: 41.2995, lon: 69.2401 },
+    { name: "Hanoi, Vietnam", lat: 21.0285, lon: 105.8542 },
+    { name: "Sana'a, Yemen", lat: 15.3694, lon: 44.1910 }
+];
+
+// Зураг дээр тэмдэглэх функц
+asianCapitals.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,
+        fillColor: "#ffff00", // Азийн хотуудыг шар өнгөөр ялгав
+        color: "#fff",
+        weight: 0,
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { 
+        direction: 'top', 
+        className: 'city-label' 
+    })
+    .addTo(map);
+});
+
+
+
+// ТӨВ АМЕРИК ТИВ НИЙСЛЭЛҮҮД
+const centralAmericanCapitals = [
+    // Хойд Америк
+    { name: "Mexico City, Mexico", lat: 19.4326, lon: -99.1332 },
+
+    // Төв Америк
+    { name: "Belmopan, Belize", lat: 17.2510, lon: -88.7669 },
+    { name: "San Jose, Costa Rica", lat: 9.9281, lon: -84.0907 },
+    { name: "San Salvador, El Salvador", lat: 13.6929, lon: -89.2182 },
+    { name: "Guatemala City, Guatemala", lat: 14.6349, lon: -90.5069 },
+    { name: "Tegucigalpa, Honduras", lat: 14.0723, lon: -87.1921 },
+    { name: "Managua, Nicaragua", lat: 12.1150, lon: -86.2362 },
+    { name: "Panama City, Panama", lat: 8.9824, lon: -79.5199 },
+
+    // Карибын тэнгисийн орнууд
+    { name: "St. John's, Antigua and Barbuda", lat: 17.1167, lon: -61.8500 },
+    { name: "Nassau, Bahamas", lat: 25.0443, lon: -77.3504 },
+    { name: "Bridgetown, Barbados", lat: 13.1060, lon: -59.6131 },
+    { name: "Havana, Cuba", lat: 23.1136, lon: -82.3666 },
+    { name: "Roseau, Dominica", lat: 15.3010, lon: -61.3880 },
+    { name: "Santo Domingo, Dominican Republic", lat: 18.4861, lon: -69.9312 },
+    { name: "St. George's, Grenada", lat: 12.0529, lon: -61.7522 },
+    { name: "Port-au-Prince, Haiti", lat: 18.5944, lon: -72.3074 },
+    { name: "Kingston, Jamaica", lat: 17.9714, lon: -76.7936 },
+    { name: "Basseterre, St. Kitts and Nevis", lat: 17.2990, lon: -62.7324 },
+    { name: "Castries, St. Lucia", lat: 14.0101, lon: -60.9875 },
+    { name: "Kingstown, St. Vincent and the Grenadines", lat: 13.1560, lon: -61.2248 },
+    { name: "Port of Spain, Trinidad and Tobago", lat: 10.6667, lon: -61.5167 }
+];
+
+// Зураг дээр тэмдэглэх функц
+centralAmericanCapitals.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,
+        fillColor: "#00ff00", // Хойд Америкийн хотуудыг улаан өнгөөр ялгав
+        color: "#fff",
+        weight: 0,
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { 
+        direction: 'top', 
+        className: 'city-label' 
+    })
+    .addTo(map);
+});
+
+
+
+// ӨМНӨД АМЕРИК ТИВ НИЙСЛЭЛҮҮД
+const southAmericanCapitals = [
+    { name: "Buenos Aires, Argentina", lat: -34.6037, lon: -58.3816 },
+    { name: "La Paz, Bolivia", lat: -16.4897, lon: -68.1193 },
+    { name: "Sucre, Bolivia", lat: -19.0333, lon: -65.2627 },
+    { name: "Brasilia, Brazil", lat: -15.7975, lon: -47.8919 },
+    { name: "Santiago, Chile", lat: -33.4489, lon: -70.6693 },
+    { name: "Bogota, Colombia", lat: 4.7110, lon: -74.0721 },
+    { name: "Quito, Ecuador", lat: -0.1807, lon: -78.4678 },
+    { name: "Georgetown, Guyana", lat: 6.8013, lon: -58.1551 },
+    { name: "Asuncion, Paraguay", lat: -25.2637, lon: -57.5759 },
+    { name: "Lima, Peru", lat: -12.0464, lon: -77.0428 },
+    { name: "Paramaribo, Suriname", lat: 5.8520, lon: -55.2038 },
+    { name: "Montevideo, Uruguay", lat: -34.9011, lon: -56.1645 },
+    { name: "Caracas, Venezuela", lat: 10.4806, lon: -66.9036 },
+    
+	// Францын Гвиана (Францын эзэмшил нутаг)
+    { name: "Cayenne, French Guiana", lat: 4.9333, lon: -52.3333 },
+    
+	// Фолклендын арлууд (Их Британийн эзэмшил нутаг)
+    { name: "Stanley, Falkland Islands", lat: -51.7000, lon: -57.8500 }
+];
+
+// Зураг дээр тэмдэглэх функц
+southAmericanCapitals.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,
+        fillColor: "#00ff00", // Өмнөд Америкийн хотуудыг ногоон өнгөөр ялгав
+        color: "#fff",
+        weight: 0,
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { 
+        direction: 'top', 
+        className: 'city-label' 
+    })
+    .addTo(map);
+});
+
+
+
+// АФРИК ТИВ НИЙСЛЭЛҮҮД
+const africanCapitals = [
+    { name: "Algiers, Algeria", lat: 36.7538, lon: 3.0588 },
+    { name: "Luanda, Angola", lat: -8.8390, lon: 13.2345 },
+    { name: "Porto-Novo, Benin", lat: 6.4969, lon: 2.6289 },
+    { name: "Gaborone, Botswana", lat: -24.6282, lon: 25.9231 },
+    { name: "Ouagadougou, Burkina Faso", lat: 12.3714, lon: -1.5197 },
+    { name: "Gitega, Burundi", lat: -3.4271, lon: 29.9246 },
+    { name: "Praia, Cape Verde", lat: 14.9310, lon: -23.5125 },
+    { name: "Yaounde, Cameroon", lat: 3.8480, lon: 11.5021 },
+    { name: "Bangui, Central African Republic", lat: 4.3947, lon: 18.5582 },
+    { name: "N'Djamena, Chad", lat: 12.1348, lon: 15.0557 },
+    { name: "Moroni, Comoros", lat: -11.7172, lon: 43.2473 },
+    { name: "Brazzaville, Congo", lat: -4.2634, lon: 15.2832 },
+    { name: "Kinshasa, DR Congo", lat: -4.4419, lon: 15.2663 },
+    { name: "Djibouti City, Djibouti", lat: 11.5883, lon: 43.1450 },
+    { name: "Cairo, Egypt", lat: 30.0444, lon: 31.2357 },
+    { name: "Malabo, Equatorial Guinea", lat: 3.7504, lon: 8.7832 },
+    { name: "Asmara, Eritrea", lat: 15.3229, lon: 38.9250 },
+    { name: "Mbabane, Eswatini", lat: -26.3055, lon: 31.1367 },
+    { name: "Addis Ababa, Ethiopia", lat: 9.0300, lon: 38.7400 },
+    { name: "Libreville, Gabon", lat: 0.4162, lon: 9.4673 },
+    { name: "Banjul, Gambia", lat: 13.4549, lon: -16.5790 },
+    { name: "Accra, Ghana", lat: 5.6037, lon: -0.1870 },
+    { name: "Conakry, Guinea", lat: 9.5092, lon: -13.7122 },
+    { name: "Bissau, Guinea-Bissau", lat: 11.8632, lon: -15.5843 },
+    { name: "Nairobi, Kenya", lat: -1.2864, lon: 36.8172 },
+    { name: "Maseru, Lesotho", lat: -29.3175, lon: 27.4810 },
+    { name: "Monrovia, Liberia", lat: 6.3005, lon: -10.7969 },
+    { name: "Tripoli, Libya", lat: 32.8872, lon: 13.1913 },
+    { name: "Antananarivo, Madagascar", lat: -18.8792, lon: 47.5079 },
+    { name: "Lilongwe, Malawi", lat: -13.9626, lon: 33.7741 },
+    { name: "Bamako, Mali", lat: 12.6392, lon: -8.0029 },
+    { name: "Nouakchott, Mauritania", lat: 18.0735, lon: -15.9582 },
+    { name: "Port Louis, Mauritius", lat: -20.1609, lon: 57.5012 },
+    { name: "Rabat, Morocco", lat: 34.0209, lon: -6.8416 },
+    { name: "Maputo, Mozambique", lat: -25.9692, lon: 32.5732 },
+    { name: "Windhoek, Namibia", lat: -22.5609, lon: 17.0658 },
+    { name: "Niamey, Niger", lat: 13.5116, lon: 2.1254 },
+    { name: "Abuja, Nigeria", lat: 9.0765, lon: 7.3986 },
+    { name: "Kigali, Rwanda", lat: -1.9441, lon: 30.0619 },
+    { name: "Sao Tome, Sao Tome and Principe", lat: 0.3302, lon: 6.7333 },
+    { name: "Dakar, Senegal", lat: 14.7167, lon: -17.4677 },
+    { name: "Victoria, Seychelles", lat: -4.6191, lon: 55.4513 },
+    { name: "Freetown, Sierra Leone", lat: 8.4840, lon: -13.2299 },
+    { name: "Mogadishu, Somalia", lat: 2.0469, lon: 45.3182 },
+    { name: "Pretoria, South Africa", lat: -25.7479, lon: 28.2293 },
+    { name: "Juba, South Sudan", lat: 4.8500, lon: 31.6000 },
+    { name: "Khartoum, Sudan", lat: 15.5007, lon: 32.5599 },
+    { name: "Dodoma, Tanzania", lat: -6.1722, lon: 35.7516 },
+    { name: "Lome, Togo", lat: 6.1375, lon: 1.2125 },
+    { name: "Tunis, Tunisia", lat: 36.8065, lon: 10.1815 },
+    { name: "Kampala, Uganda", lat: 0.3476, lon: 32.5825 },
+    { name: "Lusaka, Zambia", lat: -15.3875, lon: 28.3228 },
+    { name: "Harare, Zimbabwe", lat: -17.8252, lon: 31.0335 }
+];
+
+// Зураг дээр тэмдэглэх функц
+africanCapitals.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,
+        fillColor: "#ff0000", // Африкийн хотуудыг улбар шар өнгөөр ялгав
+        color: "#fff",
+        weight: 0,
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { 
+        direction: 'top', 
+        className: 'city-label' 
+    })
+    .addTo(map);
+});
+
+
+
+const oceaniaCapitals = [
+	// --- АВСТРАЛИ УЛС (Мужийн төвүүд болон том хотууд) ---
+    { name: "Canberra (Capital), AU", lat: -35.2809, lon: 149.1300 },
+    { name: "Sydney, NSW, AU", lat: -33.8688, lon: 151.2093 },
+    { name: "Melbourne, VIC, AU", lat: -37.8136, lon: 144.9631 },
+    { name: "Brisbane, QLD, AU", lat: -27.4698, lon: 153.0251 },
+    { name: "Perth, WA, AU", lat: -31.9505, lon: 115.8605 },
+    { name: "Adelaide, SA, AU", lat: -34.9285, lon: 138.6007 },
+    { name: "Hobart, TAS, AU", lat: -42.8821, lon: 147.3272 },
+    { name: "Darwin, NT, AU", lat: -12.4634, lon: 130.8456 },
+    { name: "Gold Coast, QLD, AU", lat: -28.0167, lon: 153.4000 },
+    { name: "Cairns, QLD, AU", lat: -16.9186, lon: 145.7725 },
+    { name: "Alice Springs, NT, AU", lat: -23.6980, lon: 133.8807 },
+
+    // --- ШИНЭ ЗЕЛАНД УЛС (Хойд болон Өмнөд арал) ---
+    { name: "Wellington (Capital), NZ", lat: -41.2865, lon: 174.7762 },
+    { name: "Auckland, NZ", lat: -36.8485, lon: 174.7633 },
+    { name: "Christchurch, NZ", lat: -43.5321, lon: 172.6362 },
+    { name: "Hamilton, NZ", lat: -37.7870, lon: 175.2793 },
+    { name: "Dunedin, NZ", lat: -45.8788, lon: 170.5028 },
+    { name: "Tauranga, NZ", lat: -37.6878, lon: 176.1651 },
+    { name: "Napier, NZ", lat: -39.4928, lon: 176.9120 },
+    { name: "Queenstown, NZ", lat: -45.0312, lon: 168.6626 },
+    { name: "Invercargill, NZ", lat: -46.4131, lon: 168.3538 },
+	
+    { name: "Suva, Fiji", lat: -18.1248, lon: 178.4501 },
+    { name: "Port Moresby, Papua New Guinea", lat: -9.4438, lon: 147.1803 },
+    { name: "Honiara, Solomon Islands", lat: -9.4456, lon: 159.9729 },
+    { name: "Port Vila, Vanuatu", lat: -17.7333, lon: 168.3273 },
+    { name: "Apia, Samoa", lat: -13.8333, lon: -171.7667 },
+    { name: "Nuku'alofa, Tonga", lat: -21.1333, lon: -175.2000 },
+    { name: "South Tarawa, Kiribati", lat: 1.3292, lon: 172.9792 },
+    { name: "Majuro, Marshall Islands", lat: 7.1167, lon: 171.3833 },
+    { name: "Palikir, Micronesia", lat: 6.9172, lon: 158.1589 },
+    { name: "Yaren, Nauru", lat: -0.5477, lon: 166.9248 },
+    { name: "Ngerulmud, Palau", lat: 7.5004, lon: 134.6242 },
+    { name: "Funafuti, Tuvalu", lat: -8.5167, lon: 179.2167 }
+];
+
+// Зураг дээр тэмдэглэх функц
+oceaniaCapitals.forEach(city => {
+    L.circleMarker([city.lat, city.lon], {
+        radius: 1,
+        fillColor: "#ff00ff", // Далайн орнуудыг ягаан өнгөөр ялгав
+        color: "#fff",
+        weight: 0,
+        opacity: 0,
+        fillOpacity: 1
+    })
+    .bindTooltip(city.name, { 
+        direction: 'top', 
+        className: 'city-label' 
+    })
+    .addTo(map);
+});
+
+
+
+// 5. STATE BORDER and FILLING. Улсын 3 тэмдэгт ISO 3166-1 alpha-3 кодыг https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3 авна
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries/MNG.geo.json')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: { 
+					color: '#fff', // хилийн зураасны өнгө
+					weight: 0.1, // хилийн зураасны зузаан
+					opacity: 1, // хилийн зураасны тунгалаг
+					fillColor: "#0066ff", // газар нутгийг дүүргэсэн өнгө
+					fillOpacity: 0.03 // газар нутгийг дүүргэсэн өнгөний тунгалаг
+				}
+            }).addTo(map);
+        });
+
+
+	
+
+	fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries/UKR.geo.json')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: { 
+					color: '#fff', // хилийн зураасны өнгө
+					weight: 1, // хилийн зураасны зузаан
+					opacity: 1, // хилийн зураасны тунгалаг
+					fillColor: "#0066ff", // газар нутгийг дүүргэсэн өнгө
+					fillOpacity: 0.03 // газар нутгийг дүүргэсэн өнгөний тунгалаг
+				}
+            }).addTo(map);
+        });
+
+
+
+
+	fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries/IRN.geo.json')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: { 
+					color: '#fff', // хилийн зураасны өнгө
+					weight: 1, // хилийн зураасны зузаан
+					opacity: 1, // хилийн зураасны тунгалаг
+					fillColor: "#0066ff", // газар нутгийг дүүргэсэн өнгө
+					fillOpacity: 0.03 // газар нутгийг дүүргэсэн өнгөний тунгалаг
+				}
+            }).addTo(map);
+        });	
+
+
+
+
+// 6. TIMEZONE VERTICAL LINE and LABEL
+    const tzLayers = [];
+    for (let offset = -12; offset <= 12; offset++) {
+        const lon = offset * 15;
+        L.polyline([[90, lon], [-90, lon]], { color: '#f2f2f2', weight: 0.3, dashArray: '2, 10' }).addTo(map);
+        
+        const label = L.marker([0, lon], {
+            icon: L.divIcon({
+                className: 'tz-wrap',
+                html: `<div class="tz-dynamic-label">
+                    <div class="tz-row-utc">UTC ${offset>=0?'+'+offset:offset}</div>
+                    <div class="tz-row-date" id="tz-d-${offset}">--- --</div>
+                    <div class="tz-row-time" id="tz-t-${offset}">--:--</div>
+                </div>`,
+                iconSize: [0, 0]
+            })
+        }).addTo(map);
+        
+        tzLayers.push({ offset, label });
+    }
+
+
+    
+// 7. LEFT BOTTOM TABLE
+	const thr = document.getElementById('table-header');
+	thr.innerHTML = ""; // Хуучныг цэвэрлэх
+	const headers = ["#", "БАЙРШИЛ", "УТГА", "УТГА", "СТАТУС", "УТГА", "УТГА"]; // Баганын нэрс
+	headers.forEach(h => thr.innerHTML += `<th>${h}</th>`);
+
+	// Шинэ мөр нэмдэг функц
+	function addRow(dataArray) {
+    	const tby = document.getElementById('table-body');
+    	const tr = document.createElement('tr');
+    	dataArray.forEach(text => {
+        	const td = document.createElement('td');
+        	td.innerText = text;
+        	tr.appendChild(td);
+    });
+    	tby.appendChild(tr); // Шинэ мөр нэмэгдэхэд хүснэгт дээшээ сунана
+	}
+
+// Жишээ өгөгдлүүд нэмэх (Энэ мөрүүдийг нэмэх бүрд хүснэгт  тэлнэ)
+addRow(["01", "Bahrain", "1:30.456", "25", "Finished", "P1", "1234"]);
+addRow(["02", "Jeddah", "1:28.123", "18", "Finished", "P2", "xxx"]);
+addRow(["03", "Melbourne", "--:--.---", "0", "Scheduled", "TBD", "kk"]);
+
+
+
+// 8. UPDATE LOOP
+    function sync() {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        
+        map.removeLayer(terminator);
+        terminator = L.terminator({ fillOpacity: 0.3, color: '#ffffff', weight: 0.1 }).addTo(map);
+        
+        const north = map.getBounds().getNorth();
+        tzLayers.forEach(tz => {
+            const zd = new Date(utc + (3600000 * tz.offset));
+            const mon = zd.toLocaleString('en-US', { month: 'short' });
+            const day = zd.getDate().toString().padStart(2, '0');
+            const tim = zd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            document.getElementById(`tz-d-${tz.offset}`).innerText = `${mon} ${day}`;
+            document.getElementById(`tz-t-${tz.offset}`).innerText = tim;
+           
+           
+           
+ // 9. TIMEZONE LABEL VERTICAL POSITION
+            const margin = 1 / Math.pow(2, map.getZoom() - 2); 
+            tz.label.setLatLng([north - margin, tz.offset * 15]);
+        });
+
+        const p = (n) => n.toString().padStart(2, '0');
+        document.getElementById('hud-date').innerText = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).replace(/\//g, '.');
+        document.getElementById('hud-day').innerText = now.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+        document.getElementById('hud-time').innerText = `${p(now.getHours())}:${p(now.getMinutes())}`;
+    }
+
+    map.on('move zoom', sync);
+    setInterval(sync, 1000);
+    sync();
+
+</script>
+</body>
+</html>
