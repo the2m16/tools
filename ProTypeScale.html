@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type Scale Generator</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/images/favicon.png">
+    <style>
+        :root {
+            --bg-color: #f9f9f9;
+            --card-bg: #ffffff;
+            --accent-color: #000000;
+            --text-main: #111111;
+            --text-muted: #888888;
+            --border-color: #eeeeee;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            border-radius: 14px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+        .label-right { color: var(--text-muted); font-size: 14px; background: #f0f0f0; padding: 4px 10px; border-radius: 6px; }
+
+        .control-group { margin-bottom: 25px; }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            appearance: none;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .base-picker {
+            display: flex;
+            gap: 5px;
+            background: #f0f0f0;
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .base-btn {
+            border: none; background: none; padding: 6px 12px; font-size: 13px;
+            border-radius: 7px; cursor: pointer; transition: all 0.2s; color: var(--text-muted);
+        }
+
+        .base-btn.active { background: white; color: black; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 30px 0; }
+
+        /* Preview Items */
+        .preview-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #fafafa;
+        }
+
+        .step-info {
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .step-label { font-size: 16px; font-weight: 400; color: #bbb; text-transform: uppercase; display: block; }
+
+        .step-content {
+            flex-grow: 1;
+            padding: 0 20px;
+            overflow: hidden;
+        }
+
+        .step-text {
+            font-weight: 600;
+            color: var(--text-main);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* PX & REM Badge */
+        .size-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 70px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            gap: 2px;
+        }
+
+        .px-val { font-size: 14px; color: var(--text-main); font-weight: 600; }
+        .rem-val { font-size: 14px; color: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Type scale</h2>
+        <span class="label-right" id="ratio-name">Major Third</span>
+    </div>
+
+    <div class="control-group">
+        <div class="control-label">
+            <span>Ratio</span>
+            <span id="ratio-val" style="font-weight: bold; color: black;">1.250</span>
+        </div>
+        <input type="range" id="ratio-slider" min="1.05" max="1.618" step="0.001" value="1.25">
+    </div>
+
+    <div class="control-group" style="display: flex; align-items: center; gap: 15px;">
+        <span class="control-label" style="margin: 0;">Base</span>
+        <div class="base-picker">
+            <button class="base-btn" onclick="updateBase(12)">12px</button>
+            <button class="base-btn" onclick="updateBase(13)">13px</button>
+            <button class="base-btn" onclick="updateBase(14)">14px</button>
+            <button class="base-btn" onclick="updateBase(15)">15px</button>
+            <button class="base-btn active" onclick="updateBase(16)">16px</button>
+            <button class="base-btn" onclick="updateBase(17)">17px</button>
+            <button class="base-btn" onclick="updateBase(18)">18px</button>
+        </div>
+    </div>
+
+    <hr>
+
+    <div id="preview-list"></div>
+</div>
+
+<script>
+    let baseSize = 16;
+    let ratio = 1.25;
+
+    const steps = [
+        { label: 'Display', p: 4, text: 'Make something cool' },
+        { label: 'H1', p: 3, text: 'Heading one' },
+        { label: 'H2', p: 2, text: 'Heading two' },
+        { label: 'H3', p: 1, text: 'Heading three' },
+        { label: 'Body', p: 0, text: 'The quick brown fox jumps over the lazy dog.' },
+        { label: 'Caption', p: -1, text: 'Used for fine print and labels' }
+    ];
+
+    const ratioNames = {
+        1.067: "Minor Second", 1.125: "Major Second", 1.200: "Minor Third",
+        1.250: "Major Third", 1.333: "Perfect Fourth", 1.414: "Augmented Fourth",
+        1.500: "Perfect Fifth", 1.618: "Golden Ratio"
+    };
+
+    function updateBase(val) {
+        baseSize = val;
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.innerText) === val);
+        });
+        render();
+    }
+
+    function render() {
+        document.getElementById('ratio-val').innerText = ratio.toFixed(3);
+        
+        let closest = Object.keys(ratioNames).reduce((prev, curr) => 
+            Math.abs(curr - ratio) < Math.abs(prev - ratio) ? curr : prev
+        );
+        document.getElementById('ratio-name').innerText = ratioNames[closest] || "Custom";
+
+        document.getElementById('preview-list').innerHTML = steps.map(step => {
+            const pxSize = baseSize * Math.pow(ratio, step.p);
+            const remSize = pxSize / 16; // Стандарт 1rem = 16px
+            
+            return `
+                <div class="preview-item">
+                    <div class="step-info">
+                        <span class="step-label">${step.label}</span>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-text" style="font-size: ${pxSize}px">${step.text}</div>
+                    </div>
+                    <div class="size-badge">
+                        <span class="px-val">${Math.round(pxSize)}px</span>
+                        <span class="rem-val">${remSize.toFixed(3)}rem</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('ratio-slider').addEventListener('input', (e) => {
+        ratio = parseFloat(e.target.value);
+        render();
+    });
+
+    render();
+</script>
+
+</body>
+</html>
