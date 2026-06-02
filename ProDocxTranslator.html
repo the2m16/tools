@@ -21,7 +21,7 @@
 
         /* Word файлын агуулга харагдах талбар */
         .content-area { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #cbd5e1; font-size: 14px; line-height: 1.6; overflow-y: auto; box-sizing: border-box; }
-        .content-area p { margin: 0 0 10px 0; }
+        .content-area p { margin: 0 0 10px 0; color: #cbd5e1 !important; }
 
         .btn { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; text-decoration: none; text-align: center; }
         .btn-clear { background: #334155; color: white; }
@@ -68,7 +68,7 @@
                 <button class="btn btn-clear" onclick="clearFields()">Clear</button>
             </div>
         </div>
-        <div id="in" class="content-area" contenteditable="true" placeholder="Энд Word файлаа оруулна уу эсвэл шууд бичнэ үү..."></div>
+        <div id="in" class="content-area" contenteditable="true" spellcheck="false" placeholder="Энд Word файлаа оруулна уу эсвэл шууд бичнэ үү..."></div>
         <button class="translate-btn" id="btn" onclick="startTranslation()">
             <span id="btn-txt">TRANSLATE NOW</span>
         </button>
@@ -80,7 +80,7 @@
             <span class="title">Translated Result</span>
             <button class="btn btn-copy" id="download-btn" onclick="downloadWordResult()" disabled style="background: #475569; cursor: not-allowed;">Download .docx</button>
         </div>
-        <div id="out" class="content-area" placeholder="Орчуулга энд гарна..."></div>
+        <div id="out" class="content-area" spellcheck="false" placeholder="Орчуулга энд гарна..."></div>
     </div>
 </div>
 
