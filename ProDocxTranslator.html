@@ -14,7 +14,7 @@
         .app { display: flex; height: 100vh; padding: 15px; gap: 15px; box-sizing: border-box; }
         .pane { flex: 1 1 50%; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; position: relative; min-width: 0; }
         .header { padding: 10px 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
-        .title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
+        .title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
         
         .lang-select { background: #334155; color: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 12px; outline: none; cursor: pointer; }
         .lang-select:hover { border-color: var(--accent); }
@@ -38,7 +38,8 @@
         
         #progress { position: absolute; top: 0; left: 0; height: 3px; background: var(--success); width: 0%; transition: width 0.3s; }
 
-        .content-area:empty::before { content: attr(placeholder); color: #64748b; cursor: text; }
+        .content-area:empty::before { content: attr(placeholder); color: #64748b; font-size: 14px; cursor: text; }
+        /* хэлний код олж харах линк https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes */
     </style>
 </head>
 <body>
@@ -52,7 +53,7 @@
                     <button class="btn btn-upload">Choose .docx File</button>
                     <input type="file" id="wordFile" accept=".docx" onchange="handleFileLoad(this)">
                 </div>
-                <label style="font-size: 11px; color: #94a3b8;">Target language:</label>
+                <label style="font-size: 11px; color: #94a3b8;">TARGET LANGUAGE:</label>
                 <select id="targetLang" class="lang-select">
                     <option value="en">English</option>
                     <option value="fr">French</option>
@@ -70,7 +71,7 @@
                 <button class="btn btn-clear" onclick="clearFields()">Clear</button>
             </div>
         </div>
-        <div id="in" class="content-area" contenteditable="true" spellcheck="false" placeholder="Энд Word файлаа оруулна уу эсвэл шууд бичнэ үү..."></div>
+        <div id="in" class="content-area" contenteditable="true" spellcheck="false" placeholder="Эх текстээ (Дурын хэлээр) энэ талбарт оруулах, хуулж тавих (CTRL+V), эсвэл шууд бичих..."></div>
         <button class="translate-btn" id="btn" onclick="startTranslation()">
             <span id="btn-txt">TRANSLATE NOW</span>
         </button>
@@ -82,7 +83,7 @@
             <span class="title">Translated Result</span>
             <button class="btn btn-copy" id="download-btn" onclick="downloadWordResult()" disabled style="background: #475569; cursor: not-allowed;">Download .docx</button>
         </div>
-        <div id="out" class="content-area" spellcheck="false" placeholder="Орчуулга энд гарна..."></div>
+        <div id="out" class="content-area" spellcheck="false" placeholder="Орчуулгын үр дүн энэ талбарт гарна..."></div>
     </div>
 </div>
 
