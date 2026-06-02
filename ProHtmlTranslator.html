@@ -11,12 +11,12 @@
         .app { display: flex; height: 100vh; padding: 15px; gap: 15px; box-sizing: border-box; }
         .pane { flex: 1 1 50%; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; position: relative; min-width: 0; }
         .header { padding: 10px 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
-        .title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
+        .title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
         
         .lang-select { background: #334155; color: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 12px; outline: none; cursor: pointer; }
         .lang-select:hover { border-color: var(--accent); }
 
-        textarea { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #cbd5e1; font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6; resize: none; }
+        textarea { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #64748b; font-size: 14px; line-height: 1.6; resize: none; }
         .btn { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
         .btn-clear { background: #334155; color: white; }
         .btn-clear:hover { background: var(--danger); }
@@ -36,7 +36,7 @@
         <div class="header">
             <span class="title">Source</span>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <label style="font-size: 11px; color: #94a3b8;">Target Language:</label>
+                <label style="font-size: 11px; color: #94a3b8;">TARGET LABGUAGE:</label>
                 <select id="targetLang" class="lang-select">
                     <option value="en">English</option>
                     <option value="fr">French</option>
