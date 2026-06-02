@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="32x32" href="/web/images/favicon.png">
-    <title>Word Document Multi-Language Translator Pro</title>
+    <title>Multi-Language Translator Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
     
@@ -20,7 +20,7 @@
         .lang-select:hover { border-color: var(--accent); }
 
         /* Word файлын агуулга харагдах талбар */
-        .content-area { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #cbd5e1; font-size: 14px; line-height: 1.6; overflow-y: auto; box-sizing: border-box; }
+        .content-area { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #cbd5e1 !important; font-size: 14px; line-height: 1.6; overflow-y: auto; box-sizing: border-box; }
         .content-area p { margin: 0 0 10px 0; color: #cbd5e1 !important; }
 
         .btn { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; text-decoration: none; text-align: center; }
@@ -44,13 +44,13 @@
 <div class="app">
     <div class="pane">
         <div class="header">
-            <span class="title" id="file-status">Source Word Document</span>
+            <span class="title" id="file-status">Source</span>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="file-input-wrapper">
                     <button class="btn btn-upload">Choose .docx File</button>
                     <input type="file" id="wordFile" accept=".docx" onchange="handleFileLoad(this)">
                 </div>
-                <label style="font-size: 11px; color: #94a3b8;">Target:</label>
+                <label style="font-size: 11px; color: #94a3b8;">Target language:</label>
                 <select id="targetLang" class="lang-select">
                     <option value="en">English</option>
                     <option value="fr">French</option>
