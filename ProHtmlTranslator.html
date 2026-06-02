@@ -36,7 +36,7 @@
         <div class="header">
             <span class="title">Source</span>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <label style="font-size: 11px; color: #94a3b8;">TARGET LABGUAGE:</label>
+                <label style="font-size: 11px; color: #94a3b8;">TARGET LANGUAGE:</label>
                 <select id="targetLang" class="lang-select">
                     <option value="en">English</option>
                     <option value="fr">French</option>
@@ -54,7 +54,7 @@
                 <button class="btn btn-clear" onclick="clearFields()">Clear</button>
             </div>
         </div>
-        <textarea id="in" placeholder="Дурын хэл дээр эх текстээ энд оруулна уу..."></textarea>
+        <textarea id="in" placeholder="Эх HTML кодоо (Дурын хэлээр) энэ талбарт оруулах, хуулж тавих (CTRL+V), эсвэл шууд бичих..."></textarea>
         <button class="translate-btn" id="btn" onclick="startTranslation()">
             <span id="btn-txt">TRANSLATE NOW</span>
         </button>
@@ -66,7 +66,7 @@
             <span class="title">Translated Result</span>
             <button class="btn btn-copy" onclick="copyResult()">Copy Result</button>
         </div>
-        <textarea id="out" readonly placeholder="Орчуулга энд гарна..."></textarea>
+        <textarea id="out" readonly placeholder="Орчуулгын үр дүн энэ талбарт гарна..."></textarea>
     </div>
 </div>
 
