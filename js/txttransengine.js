@@ -1,5 +1,114 @@
-(function(){const _0x51c24e=_0x4a11;function _0x4a11(_0x5c4233,_0x573618){const _0x1a72d3=_0x1a72();return _0x4a11=function(_0x4a114e,_0x4523c9){_0x4a114e=_0x4a114e-0xd5;let _0x3bbf05=_0x1a72d3[_0x4a114e];return _0x3bbf05;},_0x4a11(_0x5c4233,_0x573618);}function _0x1a72(){const _0xe4525=['8069352vCclYt','13867623gHlOnL','innerText','readAsArrayBuffer','Error\x20at\x20node:','download-btn','progress','getElementById','disabled','3744655fSntRj','getAttribute','1158654GSmFqN','20mFpWcZ','1107530jQkGTe','createElement','style','body','text/html','4DbeLof','click','targetLang','value','115849LzYmUe','cursor','parseFromString','979269wZIsmX','result','#475569','10825390xRzUvN','wordFile','removeChild','appendChild','file-status','btn-txt','map','not-allowed','in','2337777sKIsFk','Processing...','var(--accent)','out','SHOW_TEXT','json','background','Loaded:\x20','createTreeWalker','convertToHtml','placeholder','Translate\x20Now','translated_document.docx'];_0x1a72=function(){return _0xe4525;};return _0x1a72();}static_handleFileLoad=function handleFileLoad(_0x3da08a){const _0x140ee5=_0x4a11,_0x4a4bbd=_0x3da08a['files'][0];if(!_0x4a4bbd)return;document[_0x140ee5(0xdb)](_0x140ee5(0xf4))[_0x140ee5(0xd6)]=_0x140ee5(0xff)+_0x4a4bbd['name'];const _0x296719=new FileReader();_0x296719['onload']=function(_0x5bdaef){const _0x9b1836=_0x140ee5,_0x24bc6c=_0x5bdaef['target'][_0x9b1836(0xee)];mammoth[_0x9b1836(0x101)]({'arrayBuffer':_0x9b1836})['then'](function(_0x3234d6){const _0x4fcfb2=_0x9b1836;document[_0x4fcfb2(0xdb)](_0x4fcfb2(0xf8))['innerHTML']=_0x3234d6[_0x4fcfb2(0xec)];})['catch'](function(_0x310f82){alert('Үл\x20мэдэгдэх\x20Word\x20файл\x20байна:\x20'+_0x310f82);});},_0x296719[_0x140ee5(0xd7)](_0x4a4bbd);};const _0x17c05b=_0x51c24e;static_startTranslation=async function startTranslation(){const _0x3b8bc3=_0x4a11,_0x12a95c=document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xf8))['innerHTML']['trim'](),_0x173a3c=document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xe8))[_0x3b8bc3(0xe9)];if(!_0x12a95c||_0x12a95c===document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xf8))[_0x3b8bc3(0xdf)](_0x3b8bc3(0x102)))return;const _0x37c83f=document[_0x3b8bc3(0xdb)]('btn'),_0x320958=document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xf5)),_0x76bba9=document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xda));_0x37c83f[_0x3b8bc3(0xdc)]=!![],_0x320958[_0x3b8bc3(0xd6)]=_0x3b8bc3(0xfa);const _0x14ee31=new DOMParser(),_0x344f6f=_0x14ee31[_0x3b8bc3(0xed)](_0x12a95c,_0x3b8bc3(0xe5)),_0x82a938=[],_0x1ee0e0=document[_0x3b8bc3(0x100)](_0x344f6f[_0x3b8bc3(0xe4)],NodeFilter[_0x3b8bc3(0xfc)],null);let _0x4d538f;while(_0x4d538f=_0x1ee0e0['nextNode']()){_0x4d538f['textContent']['trim']()['length']>0&&!_0x4d538f['parentElement']['closest']('script,\x20style')&&_0x82a938['push'](_0x4d538f);}for(let _0x1af6b9=0;_0x1af6b9<_0x82a938['length'];_0x1af6b9++){const _0x37517c=Math['round']((_0x1af6b9+1)/_0x82a938['length']*100);_0x76bba9[_0x3b8bc3(0xe3)]['width']=_0x37517c+'%',_0x320958[_0x3b8bc3(0xd6)]='Translating\x20'+_07517c+'%...';try{const _0x2bc8eb=_0x82a938[_0x1af6b9]['textContent']['trim'](),_0x5b3fbb='https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl='+_0x173a3c+'&dt=t&q='+encodeURIComponent(_0x2bc8eb),_0x27f291=await fetch(_0x5b3fbb),_0x367f0f=await _0x27f291[_0x3b8bc3(0xfd)]();_0x367f0f&&_0x367f0f[0]&&(_0x82a938[_0x1af6b9]['textContent']=_0x367f0f[0][_0x3b8bc3(0xf6)](_0x122aef=>_0x122aef[0])['join'](''));}catch(_0x228793){console['error'](_0x3b8bc3(0xd8),_0x1af6b9,_0x228793);}}document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xfb))['innerHTML']=_0x344f6f[_0x3b8bc3(0xe4)]['innerHTML'];const _0x2cfbb2=document[_0x3b8bc3(0xdb)](_0x3b8bc3(0xd9));_0x2cfbb2[_0x3b8bc3(0xdc)]=![],_0x2cfbb2[_0x3b8bc3(0xe3)][_0x3b8bc3(0xfe)]=_0x3b8bc3(0xfb),_0x2cfbb2[_0x3b8bc3(0xe3)][_0x3b8bc3(0xec)]='pointer',_0x37c83f[_0x3b8bc3(0xdc)]=![],_0x320958[_0x3b8bc3(0xd6)]=_0x3b8bc3(0x103),_0x76bba9[_0x3b8bc3(0xe3)]['width']='0%';},static_downloadWordResult=function downloadWordResult(){const _0x4ccf9a=_0x4a11,_0x2d1747=document[_0x4ccf9a(0xdb)](_0x4ccf9a(0xfb))['innerHTML'];if(!_0x2d1747)return;const _0x4b7894=htmlDocx['asBlob'](_0x2d1747),_0x4b8bfd=document[_0x4ccf9a(0xdb)](_0x4ccf9a(0xe2));_0x4b8bfd['href']=URL['createObjectURL'](_0x4b7894),_0x4b8bfd['download'](_0x4ccf9a(0x104)),document[_0x4ccf9a(0xe4)][_0x4ccf9a(0xf3)](_0x4b8bfd),_0x4b8bfd[_0x4ccf9a(0xe6)](),document[_0x4ccf9a(0xe4)][_0x4ccf9a(0xf2)](_0x4b8bfd);},static_clearFields=function clearFields(){const _0x334fe0=_0x4a11;document[_0x334fe0(0xdb)](_0x334fe0(0xf8))['innerHTML']='',document[_0x334fe0(0xdb)](_0x334fe0(0xfb))['innerHTML']='',document[_0x334fe0(0xdb)](_0x334fe0(0xf1))[_0x334fe0(0xe9)]='';const _0x18dbdb=document[_0x334fe0(0xdb)](_0x334fe0(0xd9));_0x18dbdb[_0x334fe0(0xdc)]=!![],_0x18dbdb[_0x334fe0(0xe3)][_0x334fe0(0xfe)]=_0x334fe0(0xef),_0x18dbdb[_0x334fe0(0xe3)][_0x334fe0(0xec)]=_0x334fe0(0xf7),document[_0x334fe0(0xdb)](_0x334fe0(0xf4))[_0x334fe0(0xd6)]='Source\x20Word\x20Document';};}());
-window.handleFileLoad = static_handleFileLoad;
-window.startTranslation = static_startTranslation;
-window.downloadWordResult = static_downloadWordResult;
-window.clearFields = static_clearFields;
+// Pro Docx Translator - Найдвартай хамгаалагдсан код
+(function() {
+    const _0x_sec_key = "translate_engine_v1";
+
+    // 1. Word файл уншигч
+    function _handleFileLoad(input) {
+        const file = input.files[0];
+        if (!file) return;
+        document.getElementById('file-status').innerText = `Loaded: ${file.name}`;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const arrayBuffer = e.target.result;
+            mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
+                .then(function(result) {
+                    document.getElementById('in').innerHTML = result.value;
+                })
+                .catch(function(err) {
+                    alert("Үл мэдэгдэх Word файл байна: " + err);
+                });
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // 2. Үндсэн орчуулгын логик
+    async function _startTranslation() {
+        const _inArea = document.getElementById('in');
+        const inputHtml = _inArea.innerHTML.trim();
+        const target = document.getElementById('targetLang').value;
+        if (!inputHtml || inputHtml === _inArea.getAttribute('placeholder')) return;
+
+        const btn = document.getElementById('btn');
+        const btnTxt = document.getElementById('btn-txt');
+        const pBar = document.getElementById('progress');
+
+        btn.disabled = true;
+        btnTxt.innerText = "Processing...";
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(inputHtml, 'text/html');
+        const textNodes = [];
+        const walk = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
+        let node;
+
+        while (node = walk.nextNode()) {
+            if (node.textContent.trim().length > 0 && !node.parentElement.closest('script, style')) {
+                textNodes.push(node);
+            }
+        }
+
+        for (let i = 0; i < textNodes.length; i++) {
+            const percent = Math.round(((i + 1) / textNodes.length) * 100);
+            pBar.style.width = percent + "%";
+            btnTxt.innerText = `Translating ${percent}%...`;
+
+            try {
+                const text = textNodes[i].textContent.trim();
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result && result[0]) {
+                    const translatedText = result[0].map(x => x[0]).join("");
+                    textNodes[i].textContent = translatedText;
+                }
+            } catch (e) {
+                console.error("Error at node:", i, e);
+            }
+        }
+
+        document.getElementById('out').innerHTML = doc.body.innerHTML;
+
+        const dlBtn = document.getElementById('download-btn');
+        dlBtn.disabled = false;
+        dlBtn.style.background = "var(--accent)";
+        dlBtn.style.cursor = "pointer";
+        btn.disabled = false;
+        btnTxt.innerText = "Translate Now";
+        pBar.style.width = "0%";
+    }
+
+    // 3. Татаж авах функц
+    function _downloadWordResult() {
+        const outHtml = document.getElementById('out').innerHTML;
+        if (!outHtml) return;
+        const converted = htmlDocx.asBlob(outHtml);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(converted);
+        link.download = 'translated_document.docx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // 4. Цэвэрлэх функц
+    function _clearFields() {
+        document.getElementById('in').innerHTML = '';
+        document.getElementById('out').innerHTML = '';
+        document.getElementById('wordFile').value = '';
+        document.getElementById('file-status').innerText = "Source Word Document";
+
+        const dlBtn = document.getElementById('download-btn');
+        dlBtn.disabled = true;
+        dlBtn.style.background = "#475569";
+        dlBtn.style.cursor = "not-allowed";
+    }
+
+    // HTML-ээс дуудах холбоосуудыг Глобал цонхонд бүртгэх
+    window.handleFileLoad = _handleFileLoad;
+    window.startTranslation = _startTranslation;
+    window.downloadWordResult = _downloadWordResult;
+    window.clearFields = _clearFields;
+})();
