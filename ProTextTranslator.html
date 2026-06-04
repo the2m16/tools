@@ -1,1 +1,417 @@
-<!DOCTYPE html><html lang="mn"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="icon" type="image/png" sizes="32x32" href="/web/images/favicon.png"><title>Multi-Language Text Translator Pro</title><script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script><script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script><style> :root { --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #f1f5f9; --accent: #3b82f6; --success: #42A785; --danger: #ef4444; } body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; } .app { display: flex; height: 100vh; padding: 15px; gap: 15px; box-sizing: border-box; } .pane { flex: 1 1 50%; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; position: relative; min-width: 0; } .header { padding: 10px 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; } .title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; } .lang-select { background: #334155; color: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 12px; outline: none; cursor: pointer; } .lang-select:hover { border-color: var(--accent); } /* Word файлын агуулга харагдах талбар */ .content-area { flex: 1; padding: 20px; border: none; outline: none; background: transparent; color: #cbd5e1 !important; font-size: 14px; line-height: 1.6; overflow-y: auto; box-sizing: border-box; } .content-area p { margin: 0 0 10px 0; color: #cbd5e1 !important; } .btn { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; text-decoration: none; text-align: center; } .btn-clear { background: #334155; color: white; } .btn-clear:hover { background: var(--danger); } .btn-copy { background: var(--accent); color: white; } /* Файл сонгох ухаалаг товчлуур */ .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; } .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; } .btn-upload { background: var(--accent); color: white; display: inline-block; } .translate-btn { position: absolute; bottom: 25px; right: 25px; padding: 12px 24px; background: var(--success); color: white; border: none; border-radius: 50px; font-weight: 500; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; gap: 8px; } .translate-btn:disabled { background: #475569; cursor: not-allowed; opacity: 0.8; } #progress { position: absolute; top: 0; left: 0; height: 3px; background: var(--success); width: 0%; transition: width 0.3s; } .content-area:empty::before { content: attr(placeholder); color: #64748b; font-size: 14px; cursor: text; } /* хэлний код олж харах линк https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes */ /* Word болон вэбээс орж ирсэн бүх элементүүдийн өнгийг сайтад уусгах */ .content-area, .content-area * { background: transparent !important; /* Бүх цагаан дэвсгэрийг 100% устгана */ background-color: transparent !important; color: #cbd5e1 !important; /* Үсгийн өнгийг цайвар саарал болгоно */ } /* Жагсаалтын цэгүүд болон дугаарлалтыг харагдуулах тохиргоо */ .content-area ul, .content-area ol { padding-left: 20px; margin: 10px 0; } .content-area li { display: list-item; list-style-type: disc; /* Цэгэн жагсаалтыг хэвээр үлдээнэ */ } </style></head><body><div class="app"><div class="pane"><div class="header"><span class="title" id="file-status">Source</span><div style="display: flex; gap: 10px; align-items: center;"><div class="file-input-wrapper"><button class="btn btn-upload">Choose .docx File</button><input type="file" id="wordFile" accept=".docx" onchange="handleFileLoad(this)"></div><label style="font-size: 11px; color: #94a3b8;">TARGET LANGUAGE:</label><select id="targetLang" class="lang-select"><option value="en">English</option><option value="fr">French</option><option value="de">German</option><option value="es">Spanish</option><option value="pt">Portuguese</option><option value="it">Italian</option><option value="uk">Ukrainian</option><option value="he">Hebrew</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="mn">Mongolian</option><option value="ru">Russian</option></select><button class="btn btn-clear" onclick="clearFields()">Clear</button></div></div><div id="in" class="content-area" contenteditable="true" spellcheck="false" placeholder="Эх текстээ (Дурын хэлээр) энэ талбарт оруулах, хуулж тавих (CTRL+V), эсвэл шууд бичих..."></div><button class="translate-btn" id="btn" onclick="startTranslation()"><span id="btn-txt">TRANSLATE NOW</span></button></div><div class="pane"><div id="progress"></div><div class="header"><span class="title">Translated Result</span><button class="btn btn-copy" id="download-btn" onclick="downloadWordResult()" disabled style="background: #475569; cursor: not-allowed;">Download .docx</button></div><div id="out" class="content-area" spellcheck="false" placeholder="Орчуулгын үр дүн энэ талбарт гарна..."></div></div></div><script> const _0x48a758=_0x1561;(function(_0x23d026,_0x5280d2){const _0x233566=_0x1561,_0x5d3109=_0x23d026();while(!![]){try{const _0x470ca0=-parseInt(_0x233566(0x19b))/0x1+-parseInt(_0x233566(0x1e2))/0x2+parseInt(_0x233566(0x1c3))/0x3*(parseInt(_0x233566(0x1d3))/0x4)+-parseInt(_0x233566(0x1cb))/0x5*(-parseInt(_0x233566(0x1be))/0x6)+-parseInt(_0x233566(0x1d7))/0x7+parseInt(_0x233566(0x1e0))/0x8+parseInt(_0x233566(0x1e3))/0x9;if(_0x470ca0===_0x5280d2)break;else _0x5d3109['push'](_0x5d3109['shift']());}catch(_0x1cbaaf){_0x5d3109['push'](_0x5d3109['shift']());}}}(_0x51ae,0xd1186));function handleFileLoad(_0x46a09a){const _0x4e93e3=_0x1561,_0x4c8d43=_0x46a09a[_0x4e93e3(0x1bb)][0x0];if(!_0x4c8d43)return;document[_0x4e93e3(0x1b5)](_0x4e93e3(0x1d2))['innerText']=_0x4e93e3(0x1ad)+_0x4c8d43[_0x4e93e3(0x1b1)];const _0x261d2c=new FileReader();_0x261d2c[_0x4e93e3(0x1ac)]=function(_0x3295b9){const _0x3c5951=_0x4e93e3,_0x51d3f0=_0x3295b9[_0x3c5951(0x1a7)][_0x3c5951(0x1e4)];mammoth[_0x3c5951(0x19f)]({'arrayBuffer':_0x51d3f0})[_0x3c5951(0x1d6)](function(_0x17e212){const _0x3d07f2=_0x3c5951;document['getElementById']('in')['innerHTML']=_0x17e212[_0x3d07f2(0x1b7)];})[_0x3c5951(0x1d8)](function(_0x2ea94b){alert('Үл\x20мэдэгдэх\x20Word\x20файл\x20байна:\x20'+_0x2ea94b);});},_0x261d2c[_0x4e93e3(0x1cf)](_0x4c8d43);}async function startTranslation(){const _0x4f81c1=_0x1561,_0x3f0eb5=document[_0x4f81c1(0x1b5)]('in')['innerHTML'][_0x4f81c1(0x1a6)](),_0x1c79ac=document[_0x4f81c1(0x1b5)](_0x4f81c1(0x1c1))['value'];if(!_0x3f0eb5||_0x3f0eb5===document[_0x4f81c1(0x1b5)]('in')[_0x4f81c1(0x1dd)]('placeholder'))return;const _0x566863=document[_0x4f81c1(0x1b5)]('btn'),_0x29e6c5=document['getElementById'](_0x4f81c1(0x1b2)),_0x4df6ab=document[_0x4f81c1(0x1b5)]('progress');_0x566863[_0x4f81c1(0x1d9)]=!![],_0x29e6c5['innerText']=_0x4f81c1(0x1b4);const _0x520adc=new DOMParser(),_0x592618=_0x520adc[_0x4f81c1(0x1cd)](_0x3f0eb5,_0x4f81c1(0x1e6)),_0x1f3ee2=[],_0x2af460=document[_0x4f81c1(0x1a1)](_0x592618['body'],NodeFilter[_0x4f81c1(0x1c0)],null);let _0x47223c;while(_0x47223c=_0x2af460[_0x4f81c1(0x1c9)]()){_0x47223c['textContent'][_0x4f81c1(0x1a6)]()[_0x4f81c1(0x1d1)]>0x0&&!_0x47223c[_0x4f81c1(0x1a0)][_0x4f81c1(0x1c2)](_0x4f81c1(0x1a4))&&_0x1f3ee2[_0x4f81c1(0x1ce)](_0x47223c);}for(let _0x26a299=0x0;_0x26a299<_0x1f3ee2['length'];_0x26a299++){const _0x316cdf=Math['round']((_0x26a299+0x1)/_0x1f3ee2[_0x4f81c1(0x1d1)]*0x64);_0x4df6ab[_0x4f81c1(0x1bf)][_0x4f81c1(0x1e5)]=_0x316cdf+'%',_0x29e6c5[_0x4f81c1(0x1c7)]=_0x4f81c1(0x1a9)+_0x316cdf+'%...';try{const _0x2da249=_0x1f3ee2[_0x26a299]['textContent'][_0x4f81c1(0x1a6)](),_0x1a2883=_0x4f81c1(0x19c)+_0x1c79ac+_0x4f81c1(0x1ab)+encodeURIComponent(_0x2da249),_0xb3c0c4=await fetch(_0x1a2883),_0x2c4c64=await _0xb3c0c4['json']();if(_0x2c4c64&&_0x2c4c64[0x0]){const _0x683664=_0x2c4c64[0x0][_0x4f81c1(0x1bd)](_0x38706d=>_0x38706d[0x0])[_0x4f81c1(0x1bc)]('');_0x1f3ee2[_0x26a299][_0x4f81c1(0x1dc)]=_0x683664;}}catch(_0x47d751){console[_0x4f81c1(0x1c8)](_0x4f81c1(0x1da),_0x26a299,_0x47d751);}}document[_0x4f81c1(0x1b5)](_0x4f81c1(0x1e1))[_0x4f81c1(0x1b3)]=_0x592618[_0x4f81c1(0x1a5)][_0x4f81c1(0x1b3)];const _0x5c4d74=document[_0x4f81c1(0x1b5)]('download-btn');_0x5c4d74[_0x4f81c1(0x1d9)]=![],_0x5c4d74[_0x4f81c1(0x1bf)][_0x4f81c1(0x1e7)]=_0x4f81c1(0x1c5),_0x5c4d74[_0x4f81c1(0x1bf)][_0x4f81c1(0x19d)]='pointer',_0x566863['disabled']=![],_0x29e6c5[_0x4f81c1(0x1c7)]=_0x4f81c1(0x1a2),_0x4df6ab[_0x4f81c1(0x1bf)][_0x4f81c1(0x1e5)]='0%';}function _0x51ae(){const _0x2f794d=['btn-txt','innerHTML','Processing...','getElementById','click','value','translated_document.docx','removeAttribute','paste','files','join','map','654VYjekf','style','SHOW_TEXT','targetLang','closest','18YwyrMd','color','var(--accent)','clipboardData','innerText','error','nextNode','insertHTML','67075NwPydV','insertText','parseFromString','push','readAsArrayBuffer','wordFile','length','file-status','36388eBSECo','getElementsByTagName','getData','then','7890820gleDNE','catch','disabled','Error\x20at\x20node:','#475569','textContent','getAttribute','originalEvent','Source\x20Word\x20Document','8163896SdpUAZ','out','3235300evpWtc','10758465IHVVkJ','result','width','text/html','background','131325NdvlXm','https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=','cursor','execCommand','convertToHtml','parentElement','createTreeWalker','Translate\x20Now','asBlob','script,\x20style','body','trim','target','preventDefault','Translating\x20','appendChild','&dt=t&q=','onload','Loaded:\x20','removeChild','createObjectURL','download-btn','name'];_0x51ae=function(){return _0x2f794d;};return _0x51ae();}function _0x1561(_0x94c906,_0x5e1577){_0x94c906=_0x94c906-0x19b;const _0x51ae8c=_0x51ae();let _0x1561ce=_0x51ae8c[_0x94c906];return _0x1561ce;}function downloadWordResult(){const _0x4abeec=_0x1561,_0x214858=document[_0x4abeec(0x1b5)]('out')['innerHTML'];if(!_0x214858)return;const _0x367daf=htmlDocx[_0x4abeec(0x1a3)](_0x214858),_0x2ec477=document['createElement']('a');_0x2ec477['href']=URL[_0x4abeec(0x1af)](_0x367daf),_0x2ec477['download']=_0x4abeec(0x1b8),document[_0x4abeec(0x1a5)][_0x4abeec(0x1aa)](_0x2ec477),_0x2ec477[_0x4abeec(0x1b6)](),document[_0x4abeec(0x1a5)][_0x4abeec(0x1ae)](_0x2ec477);}function clearFields(){const _0x5cd9bb=_0x1561;document[_0x5cd9bb(0x1b5)]('in')['innerHTML']='',document['getElementById'](_0x5cd9bb(0x1e1))['innerHTML']='',document[_0x5cd9bb(0x1b5)](_0x5cd9bb(0x1d0))[_0x5cd9bb(0x1b7)]='',document['getElementById'](_0x5cd9bb(0x1d2))[_0x5cd9bb(0x1c7)]=_0x5cd9bb(0x1df);const _0x548d6f=document['getElementById'](_0x5cd9bb(0x1b0));_0x548d6f[_0x5cd9bb(0x1d9)]=!![],_0x548d6f['style'][_0x5cd9bb(0x1e7)]=_0x5cd9bb(0x1db),_0x548d6f['style']['cursor']='not-allowed';}document[_0x48a758(0x1b5)]('in')['addEventListener'](_0x48a758(0x1ba),function(_0x3ea073){const _0x7b3de6=_0x48a758;_0x3ea073[_0x7b3de6(0x1a8)]();let _0x58cc99=(_0x3ea073[_0x7b3de6(0x1de)]||_0x3ea073)[_0x7b3de6(0x1c6)][_0x7b3de6(0x1d5)](_0x7b3de6(0x1e6));if(!_0x58cc99){_0x58cc99=(_0x3ea073[_0x7b3de6(0x1de)]||_0x3ea073)['clipboardData'][_0x7b3de6(0x1d5)]('text/plain'),document[_0x7b3de6(0x19e)](_0x7b3de6(0x1cc),![],_0x58cc99);return;}const _0x3f6633=document['createElement']('div');_0x3f6633[_0x7b3de6(0x1b3)]=_0x58cc99;const _0x17d5ed=_0x3f6633[_0x7b3de6(0x1d4)]('*');for(let _0x1d69da=0x0;_0x1d69da<_0x17d5ed['length'];_0x1d69da++){_0x17d5ed[_0x1d69da][_0x7b3de6(0x1b9)](_0x7b3de6(0x1bf)),_0x17d5ed[_0x1d69da]['removeAttribute'](_0x7b3de6(0x1c4)),_0x17d5ed[_0x1d69da][_0x7b3de6(0x1b9)]('bgcolor');}document['execCommand'](_0x7b3de6(0x1ca),![],_0x3f6633[_0x7b3de6(0x1b3)]);}); </script></body></html>
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/web/images/favicon.png">
+  <title>MLText Translator Pro v3.0</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    :root {
+      --bg:      #0f172a;
+      --panel:   #1e293b;
+      --border:  #334155;
+      --text:    #f1f5f9;
+      --accent:  #3b82f6;
+      --success: #42A785;
+      --danger:  #ef4444;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg); color: var(--text); overflow: hidden;
+    }
+
+    .app { display: flex; height: 100vh; padding: 15px; gap: 15px; }
+
+    .pane {
+      flex: 1 1 50%; display: flex; flex-direction: column;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; position: relative; min-width: 0;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .pane.drag-over {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+    }
+
+    .drag-overlay {
+      display: none; position: absolute; inset: 0; z-index: 200;
+      border-radius: 12px; background: rgba(59,130,246,0.10);
+      border: 2px dashed var(--accent);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; pointer-events: none;
+    }
+
+    .pane.drag-over .drag-overlay { display: flex; }
+
+    .drag-overlay-icon { font-size: 36px; opacity: 0.8; }
+    .drag-overlay-text { font-size: 14px; font-weight: 600; color: var(--accent); }
+
+    .header {
+      padding: 10px 15px; background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      border-radius: 12px 12px 0 0; flex-shrink: 0;
+    }
+
+    .title {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      color: #94a3b8; letter-spacing: 0.5px;
+    }
+
+    .header-controls { display: flex; gap: 10px; align-items: center; }
+
+    .lang-select {
+      background: #334155; color: white; border: 1px solid var(--border);
+      padding: 4px 8px; border-radius: 6px; font-size: 12px;
+      outline: none; cursor: pointer;
+    }
+    .lang-select:hover { border-color: var(--accent); }
+
+    .content-area {
+      flex: 1; padding: 20px; border: none; outline: none;
+      background: transparent; color: #cbd5e1;
+      font-size: 14px; line-height: 1.6; overflow-y: auto;
+    }
+
+    .content-area p { margin: 0 0 10px 0; }
+
+    .content-area:empty::before {
+      content: attr(placeholder); color: #64748b;
+      font-size: 14px; pointer-events: none;
+    }
+
+    .content-area, .content-area * {
+      background: transparent !important;
+      background-color: transparent !important;
+      color: #cbd5e1 !important;
+    }
+
+    .content-area ul, .content-area ol { padding-left: 20px; margin: 10px 0; }
+    .content-area li { display: list-item; list-style-type: disc; }
+
+    .btn {
+      border: none; padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-clear { background: #334155; color: white; }
+    .btn-clear:hover { background: var(--danger); }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn:disabled { background: #475569 !important; cursor: not-allowed; }
+
+    .translate-btn {
+      position: absolute; bottom: 25px; right: 25px;
+      padding: 12px 24px; background: var(--success); color: white;
+      border: none; border-radius: 50px; font-weight: 600;
+      cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+      z-index: 100; display: flex; align-items: center; gap: 8px;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .translate-btn:disabled { background: #475569; cursor: not-allowed; opacity: 0.8; }
+
+    #progress {
+      position: absolute; top: 0; left: 0; height: 3px;
+      background: var(--success); width: 0%; transition: width 0.3s;
+      border-radius: 12px 0 0 0; z-index: 10;
+    }
+
+    .label-small { font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LEFT PANE: Source -->
+  <div class="pane" id="left-pane">
+
+    <div class="drag-overlay">
+      <div class="drag-overlay-icon">📄</div>
+      <div class="drag-overlay-text">Файлаа энд тавина уу (.doc / .docx / .pdf)</div>
+    </div>
+
+    <div class="header">
+      <span class="title" id="file-status">Source</span>
+      <div class="header-controls">
+        <span class="label-small">TARGET LANGUAGE:</span>
+        <select id="targetLang" class="lang-select">
+          <option value="en">English</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="es">Spanish</option>
+          <option value="pt">Portuguese</option>
+          <option value="it">Italian</option>
+          <option value="uk">Ukrainian</option>
+          <option value="he">Hebrew</option>
+          <option value="ja">Japanese</option>
+          <option value="ko">Korean</option>
+          <option value="mn">Mongolian</option>
+          <option value="ru">Russian</option>
+        </select>
+        <button class="btn btn-clear" onclick="clearFields()">Clear</button>
+      </div>
+    </div>
+
+    <div
+      id="in"
+      class="content-area"
+      contenteditable="true"
+      spellcheck="false"
+      placeholder="Энэ талбарт орчуулах эх текстээ (дурын хэлээр) хуулж тавих (CTRL+V), .doc .docx .pdf файлаар нь Drug&Drop хийж оруулах, эсвэл гараар бичих..."
+    ></div>
+
+    <button class="translate-btn" id="btn" onclick="startTranslation()">
+      <span id="btn-txt">TRANSLATE NOW</span>
+    </button>
+  </div>
+
+  <!-- RIGHT PANE: Output -->
+  <div class="pane">
+    <div id="progress"></div>
+
+    <div class="header">
+      <span class="title">Translated Result</span>
+      <div class="header-controls">
+        <button class="btn btn-primary" id="copy-btn" onclick="copyResult(this)" disabled>Copy text</button>
+        <button class="btn btn-primary" id="download-btn" onclick="downloadWordResult()" disabled>Download .docx</button>
+      </div>
+    </div>
+
+    <div
+      id="out"
+      class="content-area"
+      spellcheck="false"
+      placeholder="Энэ талбарт орчуулгын үр дүн гарна..."
+    ></div>
+  </div>
+
+</div>
+
+<script>
+  // ── PDF.js worker ────────────────────────────────────────────────────────────
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // ── Drag & Drop ──────────────────────────────────────────────────────────────
+  const leftPane = document.getElementById('left-pane');
+
+  leftPane.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    leftPane.classList.add('drag-over');
+  });
+
+  leftPane.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+
+  leftPane.addEventListener('dragleave', (e) => {
+    if (!leftPane.contains(e.relatedTarget)) {
+      leftPane.classList.remove('drag-over');
+    }
+  });
+
+  leftPane.addEventListener('drop', (e) => {
+    e.preventDefault();
+    leftPane.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file);
+  });
+
+  // ── File loading ─────────────────────────────────────────────────────────────
+  function loadFile(file) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.docx') || name.endsWith('.doc')) {
+      loadDocx(file);
+    } else if (name.endsWith('.pdf')) {
+      loadPdf(file);
+    } else {
+      alert('Зөвхөн .doc, .docx, .pdf файл дэмжигдэнэ.');
+    }
+  }
+
+  function loadDocx(file) {
+    document.getElementById('file-status').innerText = 'Loaded: ' + file.name;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      mammoth.convertToHtml({ arrayBuffer: e.target.result })
+        .then((result) => {
+          document.getElementById('in').innerHTML = result.value;
+        })
+        .catch((err) => {
+          alert('Word файл уншихад алдаа гарлаа: ' + err);
+        });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function loadPdf(file) {
+    document.getElementById('file-status').innerText = 'Loaded: ' + file.name;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let html = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item) => item.str).join(' ');
+        html += '<p>' + pageText + '</p>';
+      }
+      document.getElementById('in').innerHTML = html || '<p>PDF-ээс текст олдсонгүй.</p>';
+    } catch (err) {
+      alert('PDF уншихад алдаа гарлаа: ' + err);
+    }
+  }
+
+  // ── Translation ───────────────────────────────────────────────────────────────
+  async function startTranslation() {
+    const sourceHTML = document.getElementById('in').innerHTML.trim();
+    const targetLang = document.getElementById('targetLang').value;
+    if (!sourceHTML) return;
+
+    const translateBtn = document.getElementById('btn');
+    const btnLabel     = document.getElementById('btn-txt');
+    const progressBar  = document.getElementById('progress');
+
+    translateBtn.disabled = true;
+    btnLabel.innerText = 'Processing...';
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(sourceHTML, 'text/html');
+
+    const textNodes = [];
+    const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (
+        node.textContent.trim().length > 0 &&
+        !node.parentElement.closest('script, style')
+      ) {
+        textNodes.push(node);
+      }
+    }
+
+    for (let i = 0; i < textNodes.length; i++) {
+      const pct = Math.round((i + 1) / textNodes.length * 100);
+      progressBar.style.width = pct + '%';
+      btnLabel.innerText = 'Translating ' + pct + '%...';
+
+      try {
+        const text = textNodes[i].textContent.trim();
+        const url =
+          'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=' +
+          targetLang + '&dt=t&q=' + encodeURIComponent(text);
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data && data[0]) {
+          textNodes[i].textContent = data[0].map((chunk) => chunk[0]).join('');
+        }
+      } catch (err) {
+        console.error('Translation error at node ' + i + ':', err);
+      }
+    }
+
+    document.getElementById('out').innerHTML = doc.body.innerHTML;
+
+    document.getElementById('copy-btn').disabled     = false;
+    document.getElementById('download-btn').disabled = false;
+
+    translateBtn.disabled  = false;
+    btnLabel.innerText     = 'TRANSLATE NOW';
+    progressBar.style.width = '0%';
+  }
+
+  // ── Copy result ───────────────────────────────────────────────────────────────
+  function copyResult(btn) {
+    const outEl = document.getElementById('out');
+    const text = outEl.innerText || outEl.textContent || '';
+    if (!text.trim()) return;
+
+    const original = btn.innerText;
+    const finish = () => {
+      btn.innerText = 'Copied!';
+      btn.style.background = 'var(--success)';
+      setTimeout(() => {
+        btn.innerText = original;
+        btn.style.background = '';
+      }, 1800);
+    };
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(finish).catch(() => fallbackCopy(outEl, finish));
+    } else {
+      fallbackCopy(outEl, finish);
+    }
+  }
+
+  function fallbackCopy(el, callback) {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    callback();
+  }
+
+  // ── Download .docx ────────────────────────────────────────────────────────────
+  function downloadWordResult() {
+    const html = document.getElementById('out').innerHTML;
+    if (!html) return;
+    const blob = htmlDocx.asBlob(html);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'translated_document.docx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // ── Clear ─────────────────────────────────────────────────────────────────────
+  function clearFields() {
+    document.getElementById('in').innerHTML  = '';
+    document.getElementById('out').innerHTML = '';
+    document.getElementById('file-status').innerText = 'Source';
+    document.getElementById('copy-btn').disabled     = true;
+    document.getElementById('download-btn').disabled = true;
+  }
+
+  // ── Paste: strip inline styles ────────────────────────────────────────────────
+  document.getElementById('in').addEventListener('paste', function (e) {
+    e.preventDefault();
+    let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html');
+
+    if (!html) {
+      const plain = (e.clipboardData || e.originalEvent.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, plain);
+      return;
+    }
+
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('*').forEach((el) => {
+      el.removeAttribute('style');
+      el.removeAttribute('class');
+      el.removeAttribute('bgcolor');
+    });
+    document.execCommand('insertHTML', false, tmp.innerHTML);
+  });
+</script>
+
+</body>
+</html>
