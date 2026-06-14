@@ -218,10 +218,6 @@
     <div id="mode-selector">
       <button class="mode-btn active" data-mode="car">🚗 Машин</button>
       <button class="mode-btn" data-mode="foot">🚶 Явган</button>
-      <button class="mode-btn" data-mode="bus">🚌 Автобус</button>
-    </div>
-    <div id="bus-note" style="display:none;">
-      Автобусны хугацаа нь явган замын чиглэлд тулгуурлан ойролцоо тооцоолсон үнэлгээ (буудал хүлээх, шилжих цаг тооцогддоггүй).
     </div>
     <div id="routing-container"></div>
     <button id="clear-btn">Маршрутыг арилгах</button>
@@ -256,16 +252,9 @@
     foot: L.Routing.osrmv1({
       serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
       profile: 'foot'
-    }),
-    // Bus has no dedicated public OSRM profile, so we reuse the foot-network
-    // routing for the path and estimate time using an average bus speed.
-    bus: L.Routing.osrmv1({
-      serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
-      profile: 'foot'
     })
   };
 
-  const BUS_AVG_SPEED_KMH = 25; // average city bus speed incl. stops
   let currentMode = 'car';
 
   // Routing control
@@ -292,32 +281,6 @@
   const routingContainer = routingControl.getContainer();
   document.getElementById('routing-container').appendChild(routingContainer);
 
-  // For "bus" mode, override the displayed travel time with an estimate
-  // based on route distance and an average bus speed.
-  routingControl.on('routesfound', function(e) {
-    if (currentMode !== 'bus') return;
-    setTimeout(function() {
-      updateBusTimeDisplay(e.routes);
-    }, 0);
-  });
-
-  function updateBusTimeDisplay(routes) {
-    const summaries = routingContainer.querySelectorAll('.leaflet-routing-alt h3');
-    if (!routes) return;
-
-    summaries.forEach(function(el, i) {
-      const route = routes[i];
-      if (!route) return;
-      const hours = (route.summary.totalDistance / 1000) / BUS_AVG_SPEED_KMH;
-      const totalMin = Math.round(hours * 60);
-      const h = Math.floor(totalMin / 60);
-      const m = totalMin % 60;
-      const timeText = h > 0 ? (h + ' цаг ' + m + ' мин') : (m + ' мин');
-      el.innerHTML = el.innerHTML.replace(/<span[^>]*class="leaflet-routing-time"[^>]*>.*?<\/span>/,
-        '<span class="leaflet-routing-time">' + timeText + ' (автобус, ойролцоо)</span>');
-    });
-  }
-
   // Switch transport mode
   function setMode(mode) {
     currentMode = mode;
@@ -325,8 +288,6 @@
     document.querySelectorAll('.mode-btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
-
-    document.getElementById('bus-note').style.display = (mode === 'bus') ? 'block' : 'none';
 
     // Swap the underlying router used by the control
     routingControl.options.router = ROUTERS[mode];
