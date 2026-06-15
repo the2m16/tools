@@ -71,16 +71,8 @@
     fill: #ffffff;
     transition: transform 0.25s ease;
   }
-  #panel.open ~ #panel-toggle {
-    right: 320px;
-  }
   #panel.open ~ #panel-toggle svg {
     transform: rotate(180deg);
-  }
-  @media (max-width: 600px) {
-    #panel.open ~ #panel-toggle {
-      right: 85vw;
-    }
   }
   #panel h2 {
     margin: 0;
@@ -320,7 +312,7 @@
     show: true,
     addWaypoints: true,
     draggableWaypoints: true,
-    fitSelectedRoutes: true,
+    fitSelectedRoutes: false,
     collapsible: false,
     language: 'en',
     router: ROUTERS[currentMode],
@@ -369,10 +361,22 @@
   L.DomEvent.disableClickPropagation(panelToggle);
   L.DomEvent.disableScrollPropagation(panel);
 
+  function updateToggleOffset() {
+    if (panel.classList.contains('open')) {
+      const w = panel.getBoundingClientRect().width;
+      panelToggle.style.right = w + 'px';
+    } else {
+      panelToggle.style.right = '0px';
+    }
+  }
+
   panelToggle.addEventListener('click', function() {
     panel.classList.toggle('open');
     appEl.classList.toggle('panel-open');
+    updateToggleOffset();
   });
+
+  window.addEventListener('resize', updateToggleOffset);
 
   // Add waypoints with left mouse click
   map.on('click', function(e) {
