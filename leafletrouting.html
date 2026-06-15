@@ -186,8 +186,6 @@
   #clear-btn:hover {
     background: #dc2626;
   }
-
-  /* Locate (current location) button - bottom right, Google Maps style */
   #locate-btn {
     position: absolute;
     bottom: 24px;
@@ -252,20 +250,19 @@
 
  .map-copyright {
     position: absolute;
-    bottom: 10px;        /* Доод ирмэгээс 10px зайд */
-    left: 50%;           /* Зүүн талаас дэлгэцийн яг 50% дээр аваачна */
-    transform: translateX(-50%); /* Өөрийнх нь өргөний 50%-иар буцааж татаж яг голлуулна */
-    z-index: 999;        /* Газрын зургийн дээр харагдуулах */
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
     
-    /* Дизайн болон үсгийн загвар */
     font-family: Arial, sans-serif;
-    font-size: 0.7rem;   /* Маш цэвэрхэн, жижигхэн харагдуулна */
-    color: #999999;      /* Текстийн өнгө (саарал) */
-    background-color: rgba(26, 26, 26, 0.0); /* Ар талын газрын зураг харагдах тунгалаг бараан фон */
-    padding: 3px 8px;    /* Текст хажуу талын зай */
-    border-radius: 3px;  /* Буланг үл ялиг мөлгөр болгох */
-    pointer-events: none; /* Хэрэглэгч бичвэр дээр дарахад газрын зураг дарагдахад саад болохгүй */
-    white-space: nowrap; /* Бичвэрийг доош нь хугалж унагахгүй, нэг мөрөнд байлгах */
+    font-size: 0.7rem;
+    color: #999999;
+    background-color: rgba(26, 26, 26, 0.0);
+    padding: 3px 8px;
+    border-radius: 3px;
+    pointer-events: none;
+    white-space: nowrap;
 }
  
 </style>
@@ -285,7 +282,7 @@
       Газрын зурагт А, В цэгүүдээ хатгаж зорчих хэлбэрээ сонгоно уу. Цэгүүдийн байршлаас маршрут шууд хамаарах учир нарийвчлан зааж хатгана уу. Хатгасан цэгээ чирж байршлыг залруулж болно. Дараалуулан нэмж цэг хатгаж болно.
     </div>
     <div id="mode-selector">
-      <button class="mode-btn active" data-mode="car">🚗 Машинтай</button>
+      <button class="mode-btn active" data-mode="car">🚗 Машин</button>
       <button class="mode-btn" data-mode="foot">🚶 Явган</button>
     </div>
     <div id="routing-container"></div>
@@ -358,7 +355,7 @@
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
 
-    // Swap the underlying router used by the control
+  // Swap the underlying router used by the control
     routingControl.options.router = ROUTERS[mode];
     routingControl._router = ROUTERS[mode];
 
@@ -405,7 +402,7 @@
     const emptyIndex = waypoints.findIndex(wp => !wp.latLng);
 
     if (emptyIndex !== -1) {
-      // Fill the first empty waypoint slot
+  // Fill the first empty waypoint slot
       routingControl.spliceWaypoints(emptyIndex, 1, e.latlng);
     } else {
       // Add a new waypoint at the end
@@ -418,7 +415,7 @@
     routingControl.setWaypoints([]);
   });
 
-  // ---- Locate (current location) button, bottom-right like Google Maps ----
+  // Locate (current location) button
   let userMarker = null;
 
   const locateBtn = document.getElementById('locate-btn');
