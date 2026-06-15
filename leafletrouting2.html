@@ -14,6 +14,7 @@
     margin: 0;
     padding: 0;
     height: 100%;
+    overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
   }
   #app {
@@ -197,7 +198,7 @@
   #locate-btn {
     position: absolute;
     bottom: 24px;
-    right: 12px;
+    right: 37px;
     width: 44px;
     height: 44px;
     background: #ffffff;
@@ -209,11 +210,19 @@
     justify-content: center;
     cursor: pointer;
     z-index: 1000;
-    transition: background 0.15s;
+    transition: right 0.25s ease, background 0.15s;
     outline: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-user-select: none;
     user-select: none;
+  }
+  #app.panel-open #locate-btn {
+    right: 357px;
+  }
+  @media (max-width: 600px) {
+    #app.panel-open #locate-btn {
+      right: calc(85vw + 37px);
+    }
   }
   #locate-btn:focus {
     outline: none;
@@ -353,6 +362,7 @@
   });
 
   // ---- Panel collapse/expand toggle ----
+  const appEl = document.getElementById('app');
   const panel = document.getElementById('panel');
   const panelToggle = document.getElementById('panel-toggle');
   L.DomEvent.disableClickPropagation(panel);
@@ -361,10 +371,12 @@
 
   panelToggle.addEventListener('click', function() {
     panel.classList.toggle('open');
+    appEl.classList.toggle('panel-open');
   });
 
   map.on('click', function() {
     panel.classList.remove('open');
+    appEl.classList.remove('panel-open');
   });
 
   // Add waypoints with left mouse click
