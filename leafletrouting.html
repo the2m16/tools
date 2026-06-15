@@ -231,7 +231,7 @@
   // Улаанбаатарын төв цэг
   const UB_CENTER = [47.908296, 106.925875];
 
-  const map = L.map('map', {zoomControl: false, attributionControl: false}).setView([47.9188, 106.9176], 15);
+  const map = L.map('map', {zoomControl: false, attributionControl: false}).setView(UB_CENTER, 15);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 20,
