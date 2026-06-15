@@ -374,11 +374,6 @@
     appEl.classList.toggle('panel-open');
   });
 
-  map.on('click', function() {
-    panel.classList.remove('open');
-    appEl.classList.remove('panel-open');
-  });
-
   // Add waypoints with left mouse click
   map.on('click', function(e) {
     const waypoints = routingControl.getWaypoints();
