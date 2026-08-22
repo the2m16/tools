@@ -30,6 +30,8 @@
   .btn.danger:hover{ border-color:var(--fault); color:var(--fault); }
   .btn:disabled{ opacity:.35; cursor:not-allowed; }
   .btn:disabled:hover{ border-color:var(--line-bright); color:var(--text-hi); }
+  .btn.active{ background:var(--cyan); border-color:var(--cyan); color:#08221E; font-weight:600; }
+  .btn.active:hover{ color:#08221E; }
   input[type=file]{ display:none; }
 
   .controls{ flex:0 0 auto; width:100%; margin:0 0 14px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
@@ -40,6 +42,7 @@
     font-family:var(--font-mono); font-size:12px; padding:6px 8px; border-radius:5px; outline:none; }
   .ctrl-field input[type=number]:focus{ border-color:var(--cyan); }
   .ctrl-field input[type=color]{ width:34px; height:30px; border:1px solid var(--line-bright); border-radius:5px; background:var(--bg); cursor:pointer; padding:2px; }
+  .ctrl-field input[type=checkbox]{ width:17px; height:17px; accent-color:var(--cyan); cursor:pointer; }
   .ctrl-field select{ background:var(--bg); border:1px solid var(--line-bright); color:var(--text-hi);
     font-family:var(--font-mono); font-size:12px; padding:6px 8px; border-radius:5px; outline:none; cursor:pointer; }
   .ctrl-field select:focus{ border-color:var(--cyan); }
@@ -176,6 +179,28 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="polyModalOverlay">
+  <div class="modal">
+    <div class="modal-head"><span>Полигон засах</span><button id="polyModalCloseX">×</button></div>
+    <div class="field-block">
+      <label>Зураасны өргөн (px)</label>
+      <input type="number" id="polyModalStrokeWidth" min="1" max="20">
+    </div>
+    <div class="field-block">
+      <label>Зураасны өнгө</label>
+      <div class="swatch-row" id="polyModalStrokeSwatches"></div>
+    </div>
+    <div class="field-block">
+      <label>Дүүргэлтийн өнгө</label>
+      <div class="swatch-row" id="polyModalFillSwatches"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger" id="polyModalDelete">Полигон устгах</button>
+      <button class="btn primary" id="polyModalDone">Дуусгах</button>
+    </div>
+  </div>
+</div>
+
 
 <header>
   <h1>ЗОГСООЛЫН ГРИД КОНСТРУКТОР v5 (Integrated Systems edition)</h1>
@@ -199,6 +224,7 @@
   <button class="btn" id="applySizeBtn">Хэмжээ тохируулах</button>
   <div class="ctrl-field"><label>Нүдний талууд (px)</label><input id="cellSizeInput" type="number" min="8" max="80" value="20"></div>
   <div class="ctrl-field"><label>Дэвсгэр өнгө</label><input id="bgColorInput" type="color" value="#101b29"></div>
+  <div class="ctrl-field"><label>Тор нуух</label><input id="hideGridCheckbox" type="checkbox"></div>
   <div class="ctrl-field"><label>Слотын хүрээний өнгө</label><div class="swatch-row" id="borderSwatches"></div></div>
   <div class="ctrl-field">
     <label>Слотын фонт</label>
@@ -211,6 +237,11 @@
     </select>
   </div>
   <div class="ctrl-field"><label>Хэмжээ</label><input id="labelFontSizeInput" type="number" min="6" max="48" value="10"></div>
+  <button class="btn" id="polyDrawBtn">⬠ Полигон зурах</button>
+  <div class="ctrl-field"><label>Полигон цэгийн зай (px)</label><input id="polyDotSpacingInput" type="number" min="4" max="200" value="20"></div>
+  <div class="ctrl-field"><label>Полигоны зураасны өргөн (px)</label><input id="polyStrokeWidthInput" type="number" min="1" max="20" value="2"></div>
+  <div class="ctrl-field"><label>Полигоны зураасны өнгө</label><div class="swatch-row" id="polyStrokeSwatches"></div></div>
+  <div class="ctrl-field"><label>Полигоны дүүргэлтийн өнгө</label><div class="swatch-row" id="polyFillSwatches"></div></div>
   <div class="zoom-field">
     <button id="zoomOut">−</button>
     <span class="zlabel" id="zoomLabel">100%</span>
@@ -220,7 +251,8 @@
   <div class="hint">
     Хоосон нүднээс зэргэлдээ нүд рүү чирж 2 нүд холбоход слот үүснэ · Слот дээр дарж чирвэл байрлал өөрчлөгдөнө · Слот дээр дарахад засах цонх нээгдэнэ · Hover хийж улаан × дарвал устана ·
     Хулганаар олон слот сонгоод бөөнд нь зөөж болно ·
-    Хулганы scroll-оор zoom хийнэ · Слотын фонт/хэмжээг глобал тохируулна
+    Хулганы scroll-оор zoom хийнэ · Слотын фонт/хэмжээг глобал тохируулна ·
+    Полигон зурах горимд: цэгэн тор дээр дарж оройнуудаа байрлуулна, эхний цэг дээр дарах эсвэл Enter дарахад хаагдана, Backspace сүүлийн цэгийг арилгана, Escape цуцална · Зурахгүй үед полигоныг чирж байрлалыг өөрчилнө, дарахад (чиргэлгүй) засах цонх нээгдэж зураас/дүүргэлтийн өнгө, зузааныг тохируулж болно
   </div>
 </div>
 
@@ -278,11 +310,23 @@
   let editingTextId = null;
   let zoom = 1;
   let bgColor = '#101b29';
+  let gridLinesVisible = true;
   let selectedIds = new Set();
   let currentBorderColor = '#e2e8f0';
   let editingSlotId = null;
   let labelFontFamily = LABEL_FONT;
   let labelFontSize = 10;
+
+  let polygons = []; // {id, points:[{x,y}...], strokeColor, strokeWidth, fillColor}  -- x,y in logical (zoom=1) px, canvas-local
+  let nextPolyId = 1;
+  let currentPolyStrokeColor = '#3b82f6';
+  let currentPolyFillColor = null;
+  let polyDotSpacing = 20;
+  let polyStrokeWidth = 2;
+  let polygonDrawMode = false;
+  let inProgressPoints = [];
+  let editingPolyId = null;
+  let polyMoveState = null;
 
   let undoStack = [];
   let redoStack = [];
@@ -296,6 +340,7 @@
   const statEl = document.getElementById('stat');
   const zoomLabel = document.getElementById('zoomLabel');
   const bgColorInput = document.getElementById('bgColorInput');
+  const hideGridCheckbox = document.getElementById('hideGridCheckbox');
   const borderSwatchesEl = document.getElementById('borderSwatches');
   const fillSwatchesEl = document.getElementById('fillSwatches');
   const modalOverlay = document.getElementById('modalOverlay');
@@ -313,24 +358,44 @@
   const textFillSwatchesEl = document.getElementById('textFillSwatches');
   const textModalBold = document.getElementById('textModalBold');
   const textModalRotate = document.getElementById('textModalRotate');
+  const polyDrawBtn = document.getElementById('polyDrawBtn');
+  const polyDotSpacingInput = document.getElementById('polyDotSpacingInput');
+  const polyStrokeWidthInput = document.getElementById('polyStrokeWidthInput');
+  const polyStrokeSwatchesEl = document.getElementById('polyStrokeSwatches');
+  const polyFillSwatchesEl = document.getElementById('polyFillSwatches');
+  const polyModalOverlay = document.getElementById('polyModalOverlay');
+  const polyModalStrokeWidth = document.getElementById('polyModalStrokeWidth');
+  const polyModalStrokeSwatchesEl = document.getElementById('polyModalStrokeSwatches');
+  const polyModalFillSwatchesEl = document.getElementById('polyModalFillSwatches');
 
   colsInput.value = cols; rowsInput.value = rows; cellSizeInput.value = CELL;
   labelFontSelect.value = labelFontFamily; labelFontSizeInput.value = labelFontSize;
 
   // ---------------- undo / redo (snapshot-based) ----------------
   function snapshot(){
-    return JSON.stringify({ cols, rows, CELL, bgColor, slots, texts, currentBorderColor, labelFontFamily, labelFontSize, nextId, nextTextId });
+    return JSON.stringify({
+      cols, rows, CELL, bgColor, slots, texts, polygons, currentBorderColor, labelFontFamily, labelFontSize,
+      currentPolyStrokeColor, currentPolyFillColor, polyDotSpacing, polyStrokeWidth, nextId, nextTextId, nextPolyId
+    });
   }
   function restoreSnapshot(json){
     const s = JSON.parse(json);
     cols=s.cols; rows=s.rows; CELL=s.CELL; bgColor=s.bgColor; slots=s.slots; nextId=s.nextId;
     texts=s.texts||[]; nextTextId=s.nextTextId||nextTextId;
+    polygons=s.polygons||[]; nextPolyId=s.nextPolyId||nextPolyId;
+    currentPolyStrokeColor=s.currentPolyStrokeColor||currentPolyStrokeColor;
+    currentPolyFillColor=s.currentPolyFillColor!==undefined ? s.currentPolyFillColor : currentPolyFillColor;
+    polyDotSpacing=s.polyDotSpacing||polyDotSpacing; polyStrokeWidth=s.polyStrokeWidth||polyStrokeWidth;
     currentBorderColor=s.currentBorderColor; labelFontFamily=s.labelFontFamily; labelFontSize=s.labelFontSize;
     colsInput.value=cols; rowsInput.value=rows; cellSizeInput.value=CELL; bgColorInput.value=bgColor;
     labelFontSelect.value=labelFontFamily; labelFontSizeInput.value=labelFontSize;
+    polyDotSpacingInput.value=polyDotSpacing; polyStrokeWidthInput.value=polyStrokeWidth;
     gridEl.style.backgroundColor = bgColor;
     selectedIds = new Set();
+    inProgressPoints = [];
     renderBorderSwatches();
+    renderPolyStrokeSwatches();
+    renderPolyFillSwatches();
     render();
   }
   function updateUndoRedoButtons(){
@@ -471,12 +536,17 @@
     gridEl.style.width = (cols*ec()) + 'px';
     gridEl.style.height = (rows*ec()) + 'px';
     gridEl.style.backgroundColor = bgColor;
-    const minor = ec(), major = ec()*10;
-    gridEl.style.backgroundImage =
-      `repeating-linear-gradient(0deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
-      `repeating-linear-gradient(90deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
-      `repeating-linear-gradient(0deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px),`+
-      `repeating-linear-gradient(90deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px)`;
+    if(gridLinesVisible){
+      const minor = ec(), major = ec()*10;
+      gridEl.style.backgroundImage =
+        `repeating-linear-gradient(0deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
+        `repeating-linear-gradient(90deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
+        `repeating-linear-gradient(0deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px),`+
+        `repeating-linear-gradient(90deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px)`;
+    } else {
+      gridEl.style.backgroundImage = 'none';
+    }
+    syncPolyOverlaySize();
   }
 
   function applySelectionClasses(){
@@ -527,7 +597,10 @@
       gridEl.appendChild(el);
     });
     renderTexts();
-    statEl.textContent = slots.length + ' слот' + (selectedIds.size>1 ? ` · ${selectedIds.size} сонгогдсон` : '');
+    renderCommittedPolygons();
+    updatePolyPreview(null);
+    statEl.textContent = slots.length + ' слот' + (selectedIds.size>1 ? ` · ${selectedIds.size} сонгогдсон` : '')
+      + (polygons.length ? ` · ${polygons.length} полигон` : '');
   }
 
   function renderTexts(){
@@ -548,6 +621,310 @@
       gridEl.appendChild(el);
     });
   }
+
+  // ---------------- polygon tool: SVG overlay (dot-grid, committed polygons, live preview) ----------------
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const polySvg = document.createElementNS(SVGNS,'svg');
+  polySvg.setAttribute('id','polySvg');
+  polySvg.style.position = 'absolute';
+  polySvg.style.left = '0'; polySvg.style.top = '0';
+  polySvg.style.pointerEvents = 'none';
+  polySvg.style.zIndex = '2';
+
+  const polyDefs = document.createElementNS(SVGNS,'defs');
+  const polyPattern = document.createElementNS(SVGNS,'pattern');
+  polyPattern.setAttribute('id','polyDotPattern');
+  polyPattern.setAttribute('patternUnits','userSpaceOnUse');
+  const polyPatternDot = document.createElementNS(SVGNS,'circle');
+  polyPatternDot.setAttribute('fill','rgba(143,168,192,0.55)');
+  polyPattern.appendChild(polyPatternDot);
+  polyDefs.appendChild(polyPattern);
+  polySvg.appendChild(polyDefs);
+
+  const polyDotRect = document.createElementNS(SVGNS,'rect');
+  polyDotRect.setAttribute('id','polyDotRect');
+  polyDotRect.setAttribute('fill','url(#polyDotPattern)');
+  polyDotRect.style.display = 'none';
+  polySvg.appendChild(polyDotRect);
+
+  const polyCommittedGroup = document.createElementNS(SVGNS,'g');
+  polySvg.appendChild(polyCommittedGroup);
+
+  const polyPreviewLine = document.createElementNS(SVGNS,'polyline');
+  polyPreviewLine.setAttribute('fill','none');
+  polyPreviewLine.setAttribute('stroke','#5FE0D0');
+  polyPreviewLine.setAttribute('stroke-width','1.5');
+  polyPreviewLine.setAttribute('stroke-dasharray','5 4');
+  polySvg.appendChild(polyPreviewLine);
+
+  const polyVertexGroup = document.createElementNS(SVGNS,'g');
+  polySvg.appendChild(polyVertexGroup);
+
+  const polyCaptureRect = document.createElementNS(SVGNS,'rect');
+  polyCaptureRect.setAttribute('fill','transparent');
+  polyCaptureRect.style.pointerEvents = 'none';
+  polySvg.appendChild(polyCaptureRect);
+
+  gridEl.appendChild(polySvg);
+
+  function syncPolyOverlaySize(){
+    const w = cols*ec(), h = rows*ec();
+    polySvg.setAttribute('width', w);
+    polySvg.setAttribute('height', h);
+    polySvg.style.width = w+'px';
+    polySvg.style.height = h+'px';
+    polyDotRect.setAttribute('width', w);
+    polyDotRect.setAttribute('height', h);
+    polyCaptureRect.setAttribute('width', w);
+    polyCaptureRect.setAttribute('height', h);
+    updateDotPattern();
+  }
+
+  function updateDotPattern(){
+    const s = Math.max(4, polyDotSpacing) * zoom;
+    polyPattern.setAttribute('width', s);
+    polyPattern.setAttribute('height', s);
+    polyPattern.setAttribute('x', -s/2);
+    polyPattern.setAttribute('y', -s/2);
+    polyPatternDot.setAttribute('cx', s/2);
+    polyPatternDot.setAttribute('cy', s/2);
+    polyPatternDot.setAttribute('r', Math.max(1, Math.min(2.2, s*0.08)));
+  }
+
+  function snapToPolyGrid(x,y){
+    const s = Math.max(4, polyDotSpacing);
+    return { x: Math.round(x/s)*s, y: Math.round(y/s)*s };
+  }
+
+  function renderCommittedPolygons(){
+    polyCommittedGroup.innerHTML = '';
+    polygons.forEach(p=>{
+      const ptsAttr = p.points.map(pt => (pt.x*zoom)+','+(pt.y*zoom)).join(' ');
+      if(polyMoveState && polyMoveState.id===p.id){
+        const hi = document.createElementNS(SVGNS,'polygon');
+        hi.setAttribute('points', ptsAttr);
+        hi.setAttribute('fill','none');
+        hi.setAttribute('stroke','#5FE0D0');
+        hi.setAttribute('stroke-width', (p.strokeWidth*zoom)+4);
+        hi.setAttribute('stroke-dasharray','6 4');
+        hi.setAttribute('opacity','0.55');
+        hi.style.pointerEvents = 'none';
+        polyCommittedGroup.appendChild(hi);
+      }
+      const poly = document.createElementNS(SVGNS,'polygon');
+      poly.dataset.id = p.id;
+      poly.setAttribute('points', ptsAttr);
+      poly.setAttribute('fill', p.fillColor || 'none');
+      poly.setAttribute('fill-opacity', p.fillColor ? '0.35' : '0');
+      poly.setAttribute('stroke', p.strokeColor || '#3b82f6');
+      poly.setAttribute('stroke-width', Math.max(1, p.strokeWidth*zoom));
+      poly.setAttribute('stroke-linejoin','round');
+      poly.style.pointerEvents = polygonDrawMode ? 'none' : (p.fillColor ? 'visiblePainted' : 'visibleStroke');
+      poly.style.cursor = polygonDrawMode ? 'default' : 'grab';
+      poly.addEventListener('pointerdown', (e)=>{
+        if(polygonDrawMode) return;
+        e.stopPropagation();
+        polyMoveState = {
+          id: p.id, startPoints: p.points.map(pt=>({x:pt.x,y:pt.y})),
+          startClientX:e.clientX, startClientY:e.clientY, el: poly
+        };
+        poly.style.cursor = 'grabbing';
+        poly.setPointerCapture(e.pointerId);
+      });
+      polyCommittedGroup.appendChild(poly);
+    });
+  }
+
+  function updatePolyPreview(cursorLogical){
+    if(!polygonDrawMode || inProgressPoints.length===0){
+      polyPreviewLine.setAttribute('points','');
+      polyVertexGroup.innerHTML = '';
+      return;
+    }
+    const pts = inProgressPoints.map(p => (p.x*zoom)+','+(p.y*zoom));
+    if(cursorLogical) pts.push((cursorLogical.x*zoom)+','+(cursorLogical.y*zoom));
+    polyPreviewLine.setAttribute('points', pts.join(' '));
+
+    polyVertexGroup.innerHTML = '';
+    inProgressPoints.forEach((p,i)=>{
+      const c = document.createElementNS(SVGNS,'circle');
+      c.setAttribute('cx', p.x*zoom); c.setAttribute('cy', p.y*zoom);
+      c.setAttribute('r', i===0 ? 5 : 3.5);
+      c.setAttribute('fill', i===0 ? '#FF9D42' : '#5FE0D0');
+      c.setAttribute('stroke', '#0A121C');
+      c.setAttribute('stroke-width','1');
+      polyVertexGroup.appendChild(c);
+    });
+  }
+
+  function logicalFromPointerEvent(e){
+    const rect = gridEl.getBoundingClientRect();
+    const x = (e.clientX-rect.left)/zoom;
+    const y = (e.clientY-rect.top)/zoom;
+    return snapToPolyGrid(x,y);
+  }
+
+  function finishPolygon(){
+    if(inProgressPoints.length < 3){ inProgressPoints = []; updatePolyPreview(null); return; }
+    pushHistory();
+    polygons.push({
+      id: nextPolyId++, points: inProgressPoints.slice(),
+      strokeColor: currentPolyStrokeColor, strokeWidth: polyStrokeWidth, fillColor: currentPolyFillColor
+    });
+    inProgressPoints = [];
+    updatePolyPreview(null);
+    renderCommittedPolygons();
+  }
+
+  function setPolyDrawMode(on){
+    polygonDrawMode = on;
+    polyDrawBtn.classList.toggle('active', on);
+    polyDrawBtn.textContent = on ? '⬠ Полигон зурж байна…' : '⬠ Полигон зурах';
+    polyCaptureRect.style.pointerEvents = on ? 'all' : 'none';
+    polyDotRect.style.display = on ? 'block' : 'none';
+    gridEl.style.cursor = on ? 'crosshair' : '';
+    if(!on) inProgressPoints = [];
+    renderCommittedPolygons();
+    updatePolyPreview(null);
+  }
+
+  polyDrawBtn.addEventListener('click', ()=> setPolyDrawMode(!polygonDrawMode));
+
+  polyCaptureRect.addEventListener('pointerdown', (e)=>{
+    if(!polygonDrawMode) return;
+    e.stopPropagation();
+    const pt = logicalFromPointerEvent(e);
+    if(inProgressPoints.length >= 3){
+      const first = inProgressPoints[0];
+      const distScreen = Math.hypot((pt.x-first.x)*zoom, (pt.y-first.y)*zoom);
+      if(distScreen < 10){ finishPolygon(); return; }
+    }
+    inProgressPoints.push(pt);
+    updatePolyPreview(pt);
+  });
+  polyCaptureRect.addEventListener('pointermove', (e)=>{
+    if(!polygonDrawMode) return;
+    updatePolyPreview(logicalFromPointerEvent(e));
+  });
+
+  function renderPolyStrokeSwatches(){
+    buildSwatchRow(polyStrokeSwatchesEl, currentPolyStrokeColor, (hex)=>{
+      pushHistory();
+      currentPolyStrokeColor = hex || '#3b82f6';
+      renderPolyStrokeSwatches();
+    }, false);
+  }
+  renderPolyStrokeSwatches();
+
+  function renderPolyFillSwatches(){
+    buildSwatchRow(polyFillSwatchesEl, currentPolyFillColor, (hex)=>{
+      pushHistory();
+      currentPolyFillColor = hex;
+      renderPolyFillSwatches();
+    }, true);
+  }
+  renderPolyFillSwatches();
+
+  polyDotSpacingInput.addEventListener('focus', beginEdit);
+  polyDotSpacingInput.addEventListener('blur', commitEdit);
+  polyDotSpacingInput.addEventListener('input', ()=>{
+    polyDotSpacing = Math.max(4, Math.min(200, (+polyDotSpacingInput.value) || polyDotSpacing));
+    updateDotPattern();
+  });
+
+  polyStrokeWidthInput.addEventListener('focus', beginEdit);
+  polyStrokeWidthInput.addEventListener('blur', commitEdit);
+  polyStrokeWidthInput.addEventListener('input', ()=>{
+    polyStrokeWidth = Math.max(1, Math.min(20, (+polyStrokeWidthInput.value) || polyStrokeWidth));
+    renderCommittedPolygons();
+  });
+
+  // ---------------- drag an existing polygon to reposition it; plain click opens the edit modal ----------------
+  window.addEventListener('pointermove', (e)=>{
+    if(!polyMoveState) return;
+    const dx = (e.clientX - polyMoveState.startClientX) / zoom;
+    const dy = (e.clientY - polyMoveState.startClientY) / zoom;
+    const candidatePoints = polyMoveState.startPoints.map(pt => ({ x: pt.x+dx, y: pt.y+dy }));
+    polyMoveState.el.setAttribute('points', candidatePoints.map(pt => (pt.x*zoom)+','+(pt.y*zoom)).join(' '));
+    polyMoveState.candidatePoints = candidatePoints;
+  });
+
+  window.addEventListener('pointerup', (e)=>{
+    if(!polyMoveState) return;
+    const movedPx = Math.hypot((e.clientX||polyMoveState.startClientX)-polyMoveState.startClientX, (e.clientY||polyMoveState.startClientY)-polyMoveState.startClientY);
+    const isClick = movedPx < 5;
+    const id = polyMoveState.id;
+    if(polyMoveState.el) polyMoveState.el.style.cursor = 'grab';
+    if(isClick){
+      polyMoveState = null;
+      openPolyEditModal(id);
+      return;
+    }
+    if(polyMoveState.candidatePoints){
+      pushHistory();
+      const p = polygons.find(x=>x.id===id);
+      if(p) p.points = polyMoveState.candidatePoints;
+    }
+    polyMoveState = null;
+    render();
+  });
+
+  // ---------------- polygon edit modal (stroke color/width, fill color, delete) ----------------
+  function currentEditingPoly(){ return polygons.find(x=>x.id===editingPolyId); }
+
+  function renderPolyModalSwatches(){
+    const p = currentEditingPoly();
+    if(!p) return;
+    buildSwatchRow(polyModalStrokeSwatchesEl, p.strokeColor, (hex)=>{
+      pushHistory();
+      p.strokeColor = hex || '#3b82f6';
+      render();
+      renderPolyModalSwatches();
+    }, false);
+    buildSwatchRow(polyModalFillSwatchesEl, p.fillColor, (hex)=>{
+      pushHistory();
+      p.fillColor = hex;
+      render();
+      renderPolyModalSwatches();
+    }, true);
+  }
+
+  function openPolyEditModal(id){
+    const p = polygons.find(x=>x.id===id);
+    if(!p) return;
+    editingPolyId = id;
+    polyModalStrokeWidth.value = p.strokeWidth || 2;
+    renderPolyModalSwatches();
+    polyModalOverlay.classList.add('show');
+  }
+  function closePolyEditModal(){
+    polyModalOverlay.classList.remove('show');
+    editingPolyId = null;
+    render();
+  }
+
+  polyModalOverlay.addEventListener('click', (e)=>{ if(e.target===polyModalOverlay) closePolyEditModal(); });
+  document.getElementById('polyModalCloseX').addEventListener('click', closePolyEditModal);
+  document.getElementById('polyModalDone').addEventListener('click', closePolyEditModal);
+
+  polyModalStrokeWidth.addEventListener('focus', beginEdit);
+  polyModalStrokeWidth.addEventListener('blur', commitEdit);
+  polyModalStrokeWidth.addEventListener('input', ()=>{
+    const p = currentEditingPoly();
+    if(!p) return;
+    p.strokeWidth = Math.max(1, Math.min(20, (+polyModalStrokeWidth.value) || p.strokeWidth));
+    renderCommittedPolygons();
+  });
+
+  document.getElementById('polyModalDelete').addEventListener('click', ()=>{
+    const p = currentEditingPoly();
+    if(!p) return;
+    pushHistory();
+    polygons = polygons.filter(x=>x.id!==p.id);
+    editingPolyId = null;
+    polyModalOverlay.classList.remove('show');
+    render();
+  });
 
   function clientToCell(clientX, clientY){
     const rect = gridEl.getBoundingClientRect();
@@ -944,8 +1321,29 @@
       redo();
       return;
     }
+    if(typing) return;
+
+    if(polygonDrawMode){
+      if(e.key === 'Enter' && inProgressPoints.length>=3){
+        e.preventDefault();
+        finishPolygon();
+        return;
+      }
+      if(e.key === 'Escape'){
+        e.preventDefault();
+        if(inProgressPoints.length>0){ inProgressPoints = []; updatePolyPreview(null); }
+        else setPolyDrawMode(false);
+        return;
+      }
+      if(e.key === 'Backspace' && inProgressPoints.length>0){
+        e.preventDefault();
+        inProgressPoints.pop();
+        updatePolyPreview(null);
+        return;
+      }
+    }
+
     if((e.key==='Delete' || e.key==='Backspace') && selectedIds.size>0){
-      if(typing) return;
       pushHistory();
       slots = slots.filter(s=>!selectedIds.has(s.id));
       selectedIds = new Set();
@@ -1001,6 +1399,11 @@
     gridEl.style.backgroundColor = bgColor;
   });
 
+  hideGridCheckbox.addEventListener('change', ()=>{
+    gridLinesVisible = !hideGridCheckbox.checked;
+    sizeGrid();
+  });
+
   // ---------------- size / clear ----------------
   function changeRows(delta){
     const newRows = Math.max(4, rows + delta);
@@ -1051,8 +1454,10 @@
   });
 
   document.getElementById('clearBtn').addEventListener('click', ()=>{
-    if(slots.length === 0 && texts.length === 0) return;
-    if(confirm('Бүх слот болон текстийг устгах уу?')){ pushHistory(); slots = []; texts = []; selectedIds = new Set(); render(); }
+    if(slots.length === 0 && texts.length === 0 && polygons.length === 0) return;
+    if(confirm('Бүх слот, текст, полигоныг устгах уу?')){
+      pushHistory(); slots = []; texts = []; polygons = []; selectedIds = new Set(); render();
+    }
   });
 
   // ---------------- export / import ----------------
@@ -1068,6 +1473,9 @@
         x:t.x, y:t.y, text:t.text||'', color:t.color||'#f1f5f9',
         fontFamily:t.fontFamily||LABEL_FONT, fontSize:t.fontSize||16,
         rotation:t.rotation||0, bold:!!t.bold
+      })),
+      polygons: polygons.map(p=>({
+        points: p.points, strokeColor: p.strokeColor||'#3b82f6', strokeWidth: p.strokeWidth||2, fillColor: p.fillColor||null
       }))
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -1093,6 +1501,11 @@
     const textDivs = texts.map(t=>
       `  <div style="position:absolute; left:${t.x}px; top:${t.y}px; transform:translate(-50%,-50%) rotate(${t.rotation||0}deg); font-family:${t.fontFamily||LABEL_FONT}; font-size:${t.fontSize||16}px; font-weight:${t.bold?700:400}; color:${t.color||'#f1f5f9'}; text-shadow:0 0 3px rgba(0,0,0,.6); white-space:nowrap;">${t.text||''}</div>`
     ).join('\n');
+    const polySvgMarkup = polygons.length
+      ? `  <svg style="position:absolute; left:0; top:0; pointer-events:none;" width="${w}" height="${h}">\n` +
+        polygons.map(p => `    <polygon points="${p.points.map(pt=>pt.x+','+pt.y).join(' ')}" fill="${p.fillColor||'none'}" fill-opacity="${p.fillColor?0.35:0}" stroke="${p.strokeColor||'#3b82f6'}" stroke-width="${p.strokeWidth||2}" stroke-linejoin="round"/>`).join('\n') +
+        `\n  </svg>`
+      : '';
     const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <style>
@@ -1104,6 +1517,7 @@
 <div class="floor">
 ${divs}
 ${textDivs}
+${polySvgMarkup}
 </div>
 </body></html>`;
     const blob = new Blob([html], {type:'text/html'});
@@ -1144,8 +1558,15 @@ ${textDivs}
           color:t.color||'#f1f5f9', fontFamily:t.fontFamily||labelFontFamily,
           fontSize:+t.fontSize||16, rotation:[0,90,180,270].includes(+t.rotation)?+t.rotation:0, bold:!!t.bold
         })) : [];
+        polygons = Array.isArray(parsed.polygons) ? parsed.polygons.map(p => ({
+          id: nextPolyId++,
+          points: Array.isArray(p.points) ? p.points.map(pt=>({x:+pt.x||0, y:+pt.y||0})) : [],
+          strokeColor: p.strokeColor || currentPolyStrokeColor,
+          strokeWidth: +p.strokeWidth || polyStrokeWidth,
+          fillColor: p.fillColor || null
+        })).filter(p=>p.points.length>=3) : [];
         selectedIds = new Set();
-        colsInput.value = cols; rowsInput.value = rows;
+            colsInput.value = cols; rowsInput.value = rows;
         render();
       }catch(err){
         alert('JSON файлыг уншиж чадсангүй. Формат буруу байна.');
