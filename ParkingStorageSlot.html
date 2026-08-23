@@ -61,7 +61,7 @@
   .hint{ font-size:10.5px; color:var(--text-dim); width:100%; line-height:1.6; }
 
   .canvas-shell{ flex:1 1 auto; min-height:0; width:100%; position:relative; }
-  .canvas-wrap{ height:100%; border:1px solid var(--line-bright); border-radius:10px; overflow:auto; touch-action:none; -webkit-touch-callout:none;
+  .canvas-wrap{ height:100%; border:1px solid var(--line-bright); border-radius:10px; overflow:auto; touch-action:none; -webkit-touch-callout:none; overflow-anchor:none;
     background:var(--paper); }
   #grid{ position:relative; cursor:crosshair; user-select:none; touch-action:none; -webkit-touch-callout:none; }
 
@@ -122,6 +122,9 @@
     background:var(--bg); color:var(--text-hi); cursor:pointer; }
   .rotate-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
   .rotate-btn.active{ background:var(--cyan); border-color:var(--cyan); color:#08221E; font-weight:600; }
+  .rotate-pair{ display:flex; gap:8px; }
+  .rotate-pair .rotate-btn{ width:auto; flex:1; }
+  .rotate-readout{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
   .modal-foot{ display:flex; justify-content:space-between; gap:8px; margin-top:16px; }
 </style>
 </head>
@@ -147,7 +150,13 @@
       <div class="swatch-row" id="fillSwatches"></div>
     </div>
     <div class="field-block">
-      <button class="rotate-btn" id="modalRotate">Дугаар эргүүлэх: 0°</button>
+    <div class="field-block">
+      <div class="rotate-readout" id="modalRotateReadout">Одоогийн эргэлт: 0°</div>
+      <div class="rotate-pair">
+        <button class="rotate-btn" id="modalRotateCCW">↺ 90° (зүүн)</button>
+        <button class="rotate-btn" id="modalRotateCW">↻ 90° (баруун)</button>
+      </div>
+    </div>
     </div>
     <div class="modal-foot">
       <button class="btn danger" id="modalDelete">Слот устгах</button>
@@ -329,6 +338,8 @@
   let bgColor = '#101b29';
   let gridLinesVisible = true;
   let selectedIds = new Set();
+  let clipboardSlots = [];
+  let pasteCount = 0;
   let currentBorderColor = '#e2e8f0';
   let editingSlotId = null;
   let labelFontFamily = LABEL_FONT;
@@ -366,7 +377,9 @@
   const modalBorderColorSwatchesEl = document.getElementById('modalBorderColorSwatches');
   const modalOverlay = document.getElementById('modalOverlay');
   const modalLabel = document.getElementById('modalLabel');
-  const modalRotate = document.getElementById('modalRotate');
+  const modalRotateCCW = document.getElementById('modalRotateCCW');
+  const modalRotateCW = document.getElementById('modalRotateCW');
+  const modalRotateReadout = document.getElementById('modalRotateReadout');
   const labelFontSelect = document.getElementById('labelFontSelect');
   const labelFontSizeInput = document.getElementById('labelFontSizeInput');
   const undoBtn = document.getElementById('undoBtn');
@@ -552,8 +565,7 @@
     const ids = positions.map(p=>p.id);
     const occ = occupancy(ids);
     for(const p of positions){
-      const cells = p.horizontal ? [[p.col,p.row],[p.col+1,p.row]] : [[p.col,p.row],[p.col,p.row+1]];
-      for(const [c,r] of cells){
+      for(const [c,r] of cellsOf(p)){
         if(!inBounds(c,r)) return false;
         if(occ.has(c+','+r)) return false;
       }
@@ -568,9 +580,9 @@
     if(gridLinesVisible){
       const minor = ec(), major = ec()*10;
       gridEl.style.backgroundImage =
-        `repeating-linear-gradient(0deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
+        `repeating-linear-gradient(180deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
         `repeating-linear-gradient(90deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent ${minor}px),`+
-        `repeating-linear-gradient(0deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px),`+
+        `repeating-linear-gradient(180deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px),`+
         `repeating-linear-gradient(90deg, var(--grid-line-strong) 0, var(--grid-line-strong) 1px, transparent 1px, transparent ${major}px)`;
     } else {
       gridEl.style.backgroundImage = 'none';
@@ -628,7 +640,14 @@
     renderTexts();
     renderCommittedPolygons();
     updatePolyPreview(null);
-    statEl.textContent = slots.length + ' слот' + (selectedIds.size>1 ? ` · ${selectedIds.size} сонгогдсон` : '')
+    updateStatLine();
+  }
+
+  function updateStatLine(){
+    const slotCount = slots.filter(s=>s.kind!=='warehouse').length;
+    const whCount = slots.filter(s=>s.kind==='warehouse').length;
+    statEl.textContent = `Зогсоол: ${slotCount} · Агуулах: ${whCount}`
+      + (selectedIds.size>1 ? ` · ${selectedIds.size} сонгогдсон` : '')
       + (polygons.length ? ` · ${polygons.length} полигон` : '');
   }
 
@@ -1018,7 +1037,7 @@
     editingSlotId = id;
     modalLabel.value = s.label || '';
     renderFillSwatchesForCurrent();
-    modalRotate.textContent = 'Дугаар эргүүлэх: ' + (s.labelRotation||0) + '°';
+    modalRotateReadout.textContent = 'Одоогийн эргэлт: ' + (s.labelRotation||0) + '°';
     modalOverlay.classList.add('show');
     modalLabel.focus();
   }
@@ -1062,12 +1081,20 @@
     if(s){ s.label = modalLabel.value; render(); }
   });
 
-  modalRotate.addEventListener('click', ()=>{
+  modalRotateCW.addEventListener('click', ()=>{
     const s = currentEditingSlot();
     if(!s) return;
     pushHistory();
     s.labelRotation = ((s.labelRotation||0) + 90) % 360;
-    modalRotate.textContent = 'Дугаар эргүүлэх: ' + s.labelRotation + '°';
+    modalRotateReadout.textContent = 'Одоогийн эргэлт: ' + s.labelRotation + '°';
+    render();
+  });
+  modalRotateCCW.addEventListener('click', ()=>{
+    const s = currentEditingSlot();
+    if(!s) return;
+    pushHistory();
+    s.labelRotation = ((s.labelRotation||0) - 90 + 360) % 360;
+    modalRotateReadout.textContent = 'Одоогийн эргэлт: ' + s.labelRotation + '°';
     render();
   });
 
@@ -1142,7 +1169,7 @@
     } else if(emptyDragState.mode === 'marquee'){
       selectedIds = new Set(emptyDragState.previewIds || []);
       applySelectionClasses();
-      statEl.textContent = slots.length + ' слот' + (selectedIds.size>1 ? ` · ${selectedIds.size} сонгогдсон` : '');
+      updateStatLine();
     } else if(emptyDragState.mode === 'undecided'){
       if(activeDrawTool === 'warehouse'){
         const { startCol:col, startRow:row } = emptyDragState;
@@ -1157,7 +1184,7 @@
       }
       selectedIds = new Set();
       applySelectionClasses();
-      statEl.textContent = slots.length + ' слот';
+      updateStatLine();
     }
     clearGhost();
     clearMarquee();
@@ -1178,7 +1205,7 @@
     const ids = Array.from(selectedIds);
     const startPositions = ids.map(gid=>{
       const s = slots.find(x=>x.id===gid);
-      return { id:gid, col:s.col, row:s.row, horizontal:s.horizontal };
+      return { id:gid, col:s.col, row:s.row, horizontal:s.horizontal, kind:s.kind };
     });
     moveState = {
       ids, startPositions, clickedId: id,
@@ -1194,7 +1221,7 @@
     const dCols = Math.round((e.clientX - moveState.startClientX)/ec());
     const dRows = Math.round((e.clientY - moveState.startClientY)/ec());
     moveState.candidates = moveState.startPositions.map(p=>({
-      id:p.id, horizontal:p.horizontal,
+      id:p.id, horizontal:p.horizontal, kind:p.kind,
       col: Math.max(0, p.col + dCols), row: Math.max(0, p.row + dRows)
     }));
     moveState.candidates.forEach(c=>{
@@ -1377,6 +1404,34 @@
     render();
     openTextEditModal(t.id);
   });
+  function copySelectedSlots(){
+    if(selectedIds.size===0) return;
+    clipboardSlots = slots.filter(s=>selectedIds.has(s.id)).map(s=>({ ...s }));
+    pasteCount = 0;
+  }
+
+  function pasteClipboardSlots(){
+    if(clipboardSlots.length===0) return;
+    pasteCount++;
+    const dx = pasteCount*2, dy = pasteCount*2;
+    const candidates = clipboardSlots.map(s=>({ ...s, id:-1, col:s.col+dx, row:s.row+dy }));
+    if(!isGroupFootprintFree(candidates)){
+      alert('Хуулбарлах байрлалд слот давхцаж байна. Анхны хэсгээ өөр газар зөөгөөд дахин Ctrl+V дарна уу.');
+      pasteCount--;
+      return;
+    }
+    pushHistory();
+    const newIds = [];
+    candidates.forEach(c=>{
+      const id = nextId++;
+      newIds.push(id);
+      const { id:_drop, ...rest } = c;
+      slots.push({ ...rest, id });
+    });
+    selectedIds = new Set(newIds);
+    render();
+  }
+
   window.addEventListener('keydown', (e)=>{
     const typing = document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !typing){
@@ -1387,6 +1442,14 @@
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y' && !typing){
       e.preventDefault();
       redo();
+      return;
+    }
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='c' && !typing){
+      if(selectedIds.size>0){ e.preventDefault(); copySelectedSlots(); }
+      return;
+    }
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='v' && !typing){
+      if(clipboardSlots.length>0){ e.preventDefault(); pasteClipboardSlots(); }
       return;
     }
     if(typing) return;
@@ -1552,6 +1615,8 @@
     rows = newRows;
     rowsInput.value = rows;
     render();
+    // scroll to the bottom edge so the newly added/removed row at the bottom is clearly visible
+    canvasWrap.scrollTop = canvasWrap.scrollHeight - canvasWrap.clientHeight;
   }
   function changeCols(delta){
     const newCols = Math.max(4, cols + delta);
@@ -1564,6 +1629,8 @@
     cols = newCols;
     colsInput.value = cols;
     render();
+    // scroll to the right edge so the newly added/removed column at the right is clearly visible
+    canvasWrap.scrollLeft = canvasWrap.scrollWidth - canvasWrap.clientWidth;
   }
 
   document.querySelectorAll('.edge-ctrl .chev').forEach(btn=>{
