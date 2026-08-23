@@ -2,8 +2,8 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Parking and Storage slot constructor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Parking slot constructor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -61,9 +61,9 @@
   .hint{ font-size:10.5px; color:var(--text-dim); width:100%; line-height:1.6; }
 
   .canvas-shell{ flex:1 1 auto; min-height:0; width:100%; position:relative; }
-  .canvas-wrap{ height:100%; border:1px solid var(--line-bright); border-radius:10px; overflow:auto;
+  .canvas-wrap{ height:100%; border:1px solid var(--line-bright); border-radius:10px; overflow:auto; touch-action:none; -webkit-touch-callout:none;
     background:var(--paper); }
-  #grid{ position:relative; cursor:crosshair; user-select:none; }
+  #grid{ position:relative; cursor:crosshair; user-select:none; touch-action:none; -webkit-touch-callout:none; }
 
   .slot{ position:absolute; box-sizing:border-box; cursor:grab; }
   .slot-inner{ position:absolute; inset:1px; border:1px solid var(--slot-border); border-radius:1px;
@@ -1457,6 +1457,74 @@
     const delta = -e.deltaY * 0.0015;
     applyZoom(zoom * (1+delta), e.clientX, e.clientY);
   }, { passive:false });
+
+  // ---------------- tablet support: two-finger pinch-zoom + two-finger pan ----------------
+  // Convention: 1 finger / Apple Pencil = draw, select, move (unchanged) · 2 fingers = pan + pinch-zoom
+  const activeTouches = new Map(); // pointerId -> {x,y}
+  let multiTouchActive = false;
+  let pinchStartDist = 1, pinchStartZoom = 1;
+  let panStartMid = null, panStartScroll = null;
+
+  const touchPointsArray = () => Array.from(activeTouches.values());
+  const twoPointDist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+  const twoPointMid = (a,b) => ({ x:(a.x+b.x)/2, y:(a.y+b.y)/2 });
+
+  function cancelSinglePointerGestures(){
+    if(emptyDragState){ clearGhost(); clearMarquee(); emptyDragState = null; }
+    if(moveState){ moveState.els.forEach(el=> el && el.classList.remove('dragging')); moveState = null; render(); }
+    if(textMoveState){ textMoveState.el && textMoveState.el.classList.remove('dragging'); textMoveState = null; }
+    if(polyMoveState){ if(polyMoveState.el) polyMoveState.el.style.cursor = 'grab'; polyMoveState = null; }
+    if(polygonDrawMode){ inProgressPoints = []; updatePolyPreview(null); }
+  }
+
+  canvasWrap.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType !== 'touch') return;
+    activeTouches.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    if(activeTouches.size === 2){
+      e.stopPropagation();
+      cancelSinglePointerGestures();
+      multiTouchActive = true;
+      const [a,b] = touchPointsArray();
+      pinchStartDist = twoPointDist(a,b) || 1;
+      pinchStartZoom = zoom;
+      panStartMid = twoPointMid(a,b);
+      panStartScroll = { left: canvasWrap.scrollLeft, top: canvasWrap.scrollTop };
+    }
+  }, { capture:true });
+
+  canvasWrap.addEventListener('pointermove', (e)=>{
+    if(e.pointerType !== 'touch' || !activeTouches.has(e.pointerId)) return;
+    activeTouches.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    if(multiTouchActive && activeTouches.size === 2){
+      e.preventDefault();
+      e.stopPropagation();
+      const [a,b] = touchPointsArray();
+      const newDist = twoPointDist(a,b) || 1;
+      const newMid = twoPointMid(a,b);
+
+      const targetZoom = Math.min(3, Math.max(0.25, pinchStartZoom * (newDist/pinchStartDist)));
+      const rect = canvasWrap.getBoundingClientRect();
+      const cx = panStartMid.x - rect.left, cy = panStartMid.y - rect.top;
+      const contentX = panStartScroll.left + cx, contentY = panStartScroll.top + cy;
+      const logicalX = contentX/pinchStartZoom, logicalY = contentY/pinchStartZoom;
+
+      zoom = targetZoom;
+      render();
+
+      const dx = newMid.x - panStartMid.x, dy = newMid.y - panStartMid.y;
+      canvasWrap.scrollLeft = logicalX*zoom - cx - dx;
+      canvasWrap.scrollTop = logicalY*zoom - cy - dy;
+      zoomLabel.textContent = Math.round(zoom*100) + '%';
+    }
+  }, { capture:true, passive:false });
+
+  function endTouch(e){
+    if(e.pointerType !== 'touch') return;
+    activeTouches.delete(e.pointerId);
+    if(activeTouches.size < 2) multiTouchActive = false;
+  }
+  canvasWrap.addEventListener('pointerup', endTouch, { capture:true });
+  canvasWrap.addEventListener('pointercancel', endTouch, { capture:true });
 
   document.getElementById('zoomIn').addEventListener('click', ()=>{
     const r = canvasWrap.getBoundingClientRect();
