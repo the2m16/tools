@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Зогсоолын грид конструктор</title>
+<title>Parking and Storage slot constructor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -32,6 +32,13 @@
   .btn:disabled:hover{ border-color:var(--line-bright); color:var(--text-hi); }
   .btn.active{ background:var(--cyan); border-color:var(--cyan); color:#08221E; font-weight:600; }
   .btn.active:hover{ color:#08221E; }
+  .tool-row{ display:flex; gap:8px; width:100%; align-items:stretch; }
+  .tool-switch{ display:flex; gap:0; flex:1; border:1px solid var(--line-bright); border-radius:8px; overflow:hidden; }
+  .tool-btn{ flex:1; font-size:12.5px; padding:10px; border:none; background:var(--bg); color:var(--text-lo); cursor:pointer; border-right:1px solid var(--line-bright); }
+  .tool-btn:last-child{ border-right:none; }
+  .tool-btn:hover{ color:var(--text-hi); }
+  .tool-btn.active{ background:var(--cyan); color:#08221E; font-weight:600; }
+  .tool-group{ display:contents; }
   input[type=file]{ display:none; }
 
   .controls{ flex:0 0 auto; width:100%; margin:0 0 14px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
@@ -128,6 +135,14 @@
       <input type="text" id="modalLabel" maxlength="8" placeholder="жиш: A01">
     </div>
     <div class="field-block">
+      <label>Дугаарын өнгө</label>
+      <div class="swatch-row" id="modalLabelColorSwatches"></div>
+    </div>
+    <div class="field-block">
+      <label>Хүрээний өнгө</label>
+      <div class="swatch-row" id="modalBorderColorSwatches"></div>
+    </div>
+    <div class="field-block">
       <label>Дүүргэх өнгө</label>
       <div class="swatch-row" id="fillSwatches"></div>
     </div>
@@ -205,7 +220,6 @@
 <header>
   <h1>ЗОГСООЛЫН ГРИД КОНСТРУКТОР v5 (Integrated Systems edition)</h1>
   <div class="actions">
-    <button class="btn" id="addTextBtn">+ Текст нэмэх</button>
     <label class="btn" for="importFile">JSON import</label>
     <input type="file" id="importFile" accept="application/json">
     <button class="btn" id="exportHtmlBtn">HTML export</button>
@@ -215,33 +229,44 @@
 </header>
 
 <div class="controls">
+  <div class="tool-row">
+    <div class="tool-switch">
+      <button class="tool-btn active" data-tool="slot">Зогсоол зурах</button>
+      <button class="tool-btn" data-tool="warehouse">Агуулах зурах</button>
+      <button class="tool-btn" data-tool="polygon">Полигон зурах</button>
+    </div>
+    <button class="btn" id="addTextBtn">+ Текст нэмэх</button>
+  </div>
   <div class="ctrl-field">
     <button class="btn" id="undoBtn" title="(Ctrl+Z)">↶ Undo</button>
     <button class="btn" id="redoBtn" title="(Ctrl+Shift+Z)">↷ Redo</button>
   </div>
-  <div class="ctrl-field"><label>Нүд хөндлөнгөөр</label><input id="colsInput" type="number" min="4"></div>
-  <div class="ctrl-field"><label>Нүд босоогоор</label><input id="rowsInput" type="number" min="4"></div>
-  <button class="btn" id="applySizeBtn">Хэмжээ тохируулах</button>
-  <div class="ctrl-field"><label>Нүдний талууд (px)</label><input id="cellSizeInput" type="number" min="8" max="80" value="20"></div>
-  <div class="ctrl-field"><label>Дэвсгэр өнгө</label><input id="bgColorInput" type="color" value="#101b29"></div>
-  <div class="ctrl-field"><label>Тор нуух</label><input id="hideGridCheckbox" type="checkbox"></div>
-  <div class="ctrl-field"><label>Слотын хүрээний өнгө</label><div class="swatch-row" id="borderSwatches"></div></div>
-  <div class="ctrl-field">
-    <label>Слотын фонт</label>
-    <select id="labelFontSelect">
-      <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System UI</option>
-      <option value="'IBM Plex Mono', ui-monospace, monospace">IBM Plex Mono</option>
-      <option value="ui-monospace, 'SFMono-Regular', monospace">Monospace</option>
-      <option value="Arial, Helvetica, sans-serif">Arial</option>
-      <option value="Georgia, 'Times New Roman', serif">Serif</option>
-    </select>
+  <div id="slotToolGroup" class="tool-group">
+    <div class="ctrl-field"><label>Нүд хөндлөнгөөр</label><input id="colsInput" type="number" min="4"></div>
+    <div class="ctrl-field"><label>Нүд босоогоор</label><input id="rowsInput" type="number" min="4"></div>
+    <button class="btn" id="applySizeBtn">Хэмжээ тохируулах</button>
+    <div class="ctrl-field"><label>Нүдний талууд (px)</label><input id="cellSizeInput" type="number" min="8" max="80" value="20"></div>
+    <div class="ctrl-field"><label>Дэвсгэр өнгө</label><input id="bgColorInput" type="color" value="#101b29"></div>
+    <div class="ctrl-field"><label>Тор нуух</label><input id="hideGridCheckbox" type="checkbox"></div>
+    <div class="ctrl-field"><label>Хүрээний өнгө</label><div class="swatch-row" id="borderSwatches"></div></div>
+    <div class="ctrl-field">
+      <label>Фонт</label>
+      <select id="labelFontSelect">
+        <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System UI</option>
+        <option value="'IBM Plex Mono', ui-monospace, monospace">IBM Plex Mono</option>
+        <option value="ui-monospace, 'SFMono-Regular', monospace">Monospace</option>
+        <option value="Arial, Helvetica, sans-serif">Arial</option>
+        <option value="Georgia, 'Times New Roman', serif">Serif</option>
+      </select>
+    </div>
+    <div class="ctrl-field"><label id="labelFontSizeLabel">Зогсоолын фонт хэмжээ</label><input id="labelFontSizeInput" type="number" min="6" max="48" value="10"></div>
   </div>
-  <div class="ctrl-field"><label>Хэмжээ</label><input id="labelFontSizeInput" type="number" min="6" max="48" value="10"></div>
-  <button class="btn" id="polyDrawBtn">⬠ Полигон зурах</button>
-  <div class="ctrl-field"><label>Полигон цэгийн зай (px)</label><input id="polyDotSpacingInput" type="number" min="4" max="200" value="20"></div>
-  <div class="ctrl-field"><label>Полигоны зураасны өргөн (px)</label><input id="polyStrokeWidthInput" type="number" min="1" max="20" value="2"></div>
-  <div class="ctrl-field"><label>Полигоны зураасны өнгө</label><div class="swatch-row" id="polyStrokeSwatches"></div></div>
-  <div class="ctrl-field"><label>Полигоны дүүргэлтийн өнгө</label><div class="swatch-row" id="polyFillSwatches"></div></div>
+  <div id="polyToolGroup" class="tool-group" style="display:none">
+    <div class="ctrl-field"><label>Полигон цэгийн зай (px)</label><input id="polyDotSpacingInput" type="number" min="4" max="200" value="20"></div>
+    <div class="ctrl-field"><label>Зураасны өргөн (px)</label><input id="polyStrokeWidthInput" type="number" min="1" max="20" value="2"></div>
+    <div class="ctrl-field"><label>Зураасны өнгө</label><div class="swatch-row" id="polyStrokeSwatches"></div></div>
+    <div class="ctrl-field"><label>Дүүргэлтийн өнгө</label><div class="swatch-row" id="polyFillSwatches"></div></div>
+  </div>
   <div class="zoom-field">
     <button id="zoomOut">−</button>
     <span class="zlabel" id="zoomLabel">100%</span>
@@ -249,10 +274,10 @@
   </div>
   <div class="stat" id="stat"></div>
   <div class="hint">
-    Хоосон нүднээс зэргэлдээ нүд рүү чирж 2 нүд холбоход слот үүснэ · Слот дээр дарж чирвэл байрлал өөрчлөгдөнө · Слот дээр дарахад засах цонх нээгдэнэ · Hover хийж улаан × дарвал устана ·
-    Хулганаар олон слот сонгоод бөөнд нь зөөж болно ·
-    Хулганы scroll-оор zoom хийнэ · Слотын фонт/хэмжээг глобал тохируулна ·
-    Полигон зурах горимд: цэгэн тор дээр дарж оройнуудаа байрлуулна, эхний цэг дээр дарах эсвэл Enter дарахад хаагдана, Backspace сүүлийн цэгийг арилгана, Escape цуцална · Зурахгүй үед полигоныг чирж байрлалыг өөрчилнө, дарахад (чиргэлгүй) засах цонх нээгдэж зураас/дүүргэлтийн өнгө, зузааныг тохируулж болно
+    Зогсоол: хоосон нүднээс зэргэлдээ нүд рүү чирж 2 нүд холбоход слот үүснэ (2:1) · Агуулах: хоосон нүд дээр дарахад 1 нүдэд слот үүснэ (1:1) ·
+    Слот дээр дарж чирвэл байрлал өөрчлөгдөнө, дарахад (чиргэлгүй) засах цонх нээгдэнэ · Hover хийж улаан × дарвал устана · Хулганаар олон слот сонгоод бөөнд нь зөөж болно ·
+    Хулганы scroll-оор zoom хийнэ · Фонт/хэмжээг глобал тохируулна ·
+    Полигон зурах горимд: цэгэн тор дээр дарж оройнуудаа байрлуулна, эхний цэг дээр дарах эсвэл Enter дарахад хаагдана, Backspace сүүлийн цэгийг арилгана, Escape цуцална · Зурахгүй үед полигоныг чирж байрлалыг өөрчилнө, дарахад засах цонх нээгдэж зураас/дүүргэлтийн өнгө, зузааныг тохируулж болно
   </div>
 </div>
 
@@ -315,7 +340,8 @@
   let currentBorderColor = '#e2e8f0';
   let editingSlotId = null;
   let labelFontFamily = LABEL_FONT;
-  let labelFontSize = 10;
+  let labelFontSizeSlot = 10;
+  let labelFontSizeWarehouse = 8;
 
   let polygons = []; // {id, points:[{x,y}...], strokeColor, strokeWidth, fillColor}  -- x,y in logical (zoom=1) px, canvas-local
   let nextPolyId = 1;
@@ -323,6 +349,7 @@
   let currentPolyFillColor = null;
   let polyDotSpacing = 20;
   let polyStrokeWidth = 2;
+  let activeDrawTool = 'slot'; // 'slot' | 'warehouse' | 'polygon'
   let polygonDrawMode = false;
   let inProgressPoints = [];
   let editingPolyId = null;
@@ -343,6 +370,8 @@
   const hideGridCheckbox = document.getElementById('hideGridCheckbox');
   const borderSwatchesEl = document.getElementById('borderSwatches');
   const fillSwatchesEl = document.getElementById('fillSwatches');
+  const modalLabelColorSwatchesEl = document.getElementById('modalLabelColorSwatches');
+  const modalBorderColorSwatchesEl = document.getElementById('modalBorderColorSwatches');
   const modalOverlay = document.getElementById('modalOverlay');
   const modalLabel = document.getElementById('modalLabel');
   const modalRotate = document.getElementById('modalRotate');
@@ -358,7 +387,6 @@
   const textFillSwatchesEl = document.getElementById('textFillSwatches');
   const textModalBold = document.getElementById('textModalBold');
   const textModalRotate = document.getElementById('textModalRotate');
-  const polyDrawBtn = document.getElementById('polyDrawBtn');
   const polyDotSpacingInput = document.getElementById('polyDotSpacingInput');
   const polyStrokeWidthInput = document.getElementById('polyStrokeWidthInput');
   const polyStrokeSwatchesEl = document.getElementById('polyStrokeSwatches');
@@ -369,12 +397,12 @@
   const polyModalFillSwatchesEl = document.getElementById('polyModalFillSwatches');
 
   colsInput.value = cols; rowsInput.value = rows; cellSizeInput.value = CELL;
-  labelFontSelect.value = labelFontFamily; labelFontSizeInput.value = labelFontSize;
+  labelFontSelect.value = labelFontFamily; labelFontSizeInput.value = labelFontSizeSlot;
 
   // ---------------- undo / redo (snapshot-based) ----------------
   function snapshot(){
     return JSON.stringify({
-      cols, rows, CELL, bgColor, slots, texts, polygons, currentBorderColor, labelFontFamily, labelFontSize,
+      cols, rows, CELL, bgColor, slots, texts, polygons, currentBorderColor, labelFontFamily, labelFontSizeSlot, labelFontSizeWarehouse,
       currentPolyStrokeColor, currentPolyFillColor, polyDotSpacing, polyStrokeWidth, nextId, nextTextId, nextPolyId
     });
   }
@@ -386,9 +414,11 @@
     currentPolyStrokeColor=s.currentPolyStrokeColor||currentPolyStrokeColor;
     currentPolyFillColor=s.currentPolyFillColor!==undefined ? s.currentPolyFillColor : currentPolyFillColor;
     polyDotSpacing=s.polyDotSpacing||polyDotSpacing; polyStrokeWidth=s.polyStrokeWidth||polyStrokeWidth;
-    currentBorderColor=s.currentBorderColor; labelFontFamily=s.labelFontFamily; labelFontSize=s.labelFontSize;
+    currentBorderColor=s.currentBorderColor; labelFontFamily=s.labelFontFamily;
+    labelFontSizeSlot=s.labelFontSizeSlot||labelFontSizeSlot; labelFontSizeWarehouse=s.labelFontSizeWarehouse||labelFontSizeWarehouse;
     colsInput.value=cols; rowsInput.value=rows; cellSizeInput.value=CELL; bgColorInput.value=bgColor;
-    labelFontSelect.value=labelFontFamily; labelFontSizeInput.value=labelFontSize;
+    labelFontSelect.value=labelFontFamily;
+    labelFontSizeInput.value = activeDrawTool==='warehouse' ? labelFontSizeWarehouse : labelFontSizeSlot;
     polyDotSpacingInput.value=polyDotSpacing; polyStrokeWidthInput.value=polyStrokeWidth;
     gridEl.style.backgroundColor = bgColor;
     selectedIds = new Set();
@@ -486,14 +516,21 @@
   labelFontSizeInput.addEventListener('focus', beginEdit);
   labelFontSizeInput.addEventListener('blur', commitEdit);
   labelFontSizeInput.addEventListener('input', ()=>{
-    labelFontSize = Math.max(6, Math.min(48, (+labelFontSizeInput.value) || labelFontSize));
+    const v = Math.max(6, Math.min(48, (+labelFontSizeInput.value) || 10));
+    if(activeDrawTool === 'warehouse') labelFontSizeWarehouse = v;
+    else labelFontSizeSlot = v;
     render();
   });
 
   const ec = () => CELL * zoom; // effective cell size in px at current zoom
 
   function cellsOf(s){
+    if(s.kind === 'warehouse') return [[s.col, s.row]];
     return s.horizontal ? [[s.col,s.row],[s.col+1,s.row]] : [[s.col,s.row],[s.col,s.row+1]];
+  }
+  function isFreeSingleCell(col,row,excludeIds){
+    if(!inBounds(col,row)) return false;
+    return !occupancy(excludeIds).has(col+','+row);
   }
 
   function occupancy(excludeIds){
@@ -564,8 +601,8 @@
       el.dataset.id = s.id;
       el.style.left = (s.col*ec()) + 'px';
       el.style.top = (s.row*ec()) + 'px';
-      el.style.width = (s.horizontal ? ec()*2 : ec()) + 'px';
-      el.style.height = (s.horizontal ? ec() : ec()*2) + 'px';
+      el.style.width = (s.kind==='warehouse' ? ec() : (s.horizontal ? ec()*2 : ec())) + 'px';
+      el.style.height = (s.kind==='warehouse' ? ec() : (s.horizontal ? ec() : ec()*2)) + 'px';
       const inner = document.createElement('div');
       inner.className = 'slot-inner';
       inner.style.borderColor = s.borderColor || '#e2e8f0';
@@ -576,8 +613,8 @@
         label.className = 'slot-label';
         label.textContent = s.label;
         label.style.fontFamily = labelFontFamily;
-        label.style.fontSize = (labelFontSize * zoom) + 'px';
-        label.style.color = '#f1f5f9';
+        label.style.fontSize = ((s.kind==='warehouse' ? labelFontSizeWarehouse : labelFontSizeSlot) * zoom) + 'px';
+        label.style.color = s.labelColor || '#f1f5f9';
         label.style.textShadow = '0 0 3px rgba(0,0,0,0.85)';
         label.style.transform = 'translate(-50%,-50%) rotate(' + (s.labelRotation||0) + 'deg)';
         el.appendChild(label);
@@ -778,8 +815,6 @@
 
   function setPolyDrawMode(on){
     polygonDrawMode = on;
-    polyDrawBtn.classList.toggle('active', on);
-    polyDrawBtn.textContent = on ? '⬠ Полигон зурж байна…' : '⬠ Полигон зурах';
     polyCaptureRect.style.pointerEvents = on ? 'all' : 'none';
     polyDotRect.style.display = on ? 'block' : 'none';
     gridEl.style.cursor = on ? 'crosshair' : '';
@@ -788,7 +823,20 @@
     updatePolyPreview(null);
   }
 
-  polyDrawBtn.addEventListener('click', ()=> setPolyDrawMode(!polygonDrawMode));
+  function setActiveDrawTool(tool){
+    activeDrawTool = tool;
+    document.querySelectorAll('.tool-btn').forEach(b=> b.classList.toggle('active', b.dataset.tool===tool));
+    document.getElementById('slotToolGroup').style.display = (tool==='polygon') ? 'none' : '';
+    document.getElementById('polyToolGroup').style.display = (tool==='polygon') ? '' : 'none';
+    if(tool !== 'polygon'){
+      document.getElementById('labelFontSizeLabel').textContent = tool==='warehouse' ? 'Агуулахын фонт хэмжээ' : 'Зогсоолын фонт хэмжээ';
+      labelFontSizeInput.value = tool==='warehouse' ? labelFontSizeWarehouse : labelFontSizeSlot;
+    }
+    setPolyDrawMode(tool==='polygon');
+  }
+  document.querySelectorAll('.tool-btn').forEach(b=>{
+    b.addEventListener('click', ()=> setActiveDrawTool(b.dataset.tool));
+  });
 
   polyCaptureRect.addEventListener('pointerdown', (e)=>{
     if(!polygonDrawMode) return;
@@ -986,6 +1034,18 @@
   function renderFillSwatchesForCurrent(){
     const s = currentEditingSlot();
     if(!s) return;
+    buildSwatchRow(modalLabelColorSwatchesEl, s.labelColor || '#f1f5f9', (hex)=>{
+      pushHistory();
+      s.labelColor = hex || '#f1f5f9';
+      render();
+      renderFillSwatchesForCurrent();
+    }, false);
+    buildSwatchRow(modalBorderColorSwatchesEl, s.borderColor, (hex)=>{
+      pushHistory();
+      s.borderColor = hex || '#e2e8f0';
+      render();
+      renderFillSwatchesForCurrent();
+    }, false);
     buildSwatchRow(fillSwatchesEl, s.fillColor, (hex)=>{
       pushHistory();
       s.fillColor = hex;
@@ -1047,10 +1107,15 @@
     const movedPx = Math.hypot(e.clientX-emptyDragState.startClientX, e.clientY-emptyDragState.startClientY);
 
     if(emptyDragState.mode === 'undecided'){
-      const isAdjacent = (Math.abs(dx)===1 && dy===0) || (dx===0 && Math.abs(dy)===1);
-      if(isAdjacent){ emptyDragState.mode = 'draw'; }
-      else if(movedPx > ec()*1.4){ emptyDragState.mode = 'marquee'; }
-      else { return; }
+      if(activeDrawTool === 'slot'){
+        const isAdjacent = (Math.abs(dx)===1 && dy===0) || (dx===0 && Math.abs(dy)===1);
+        if(isAdjacent){ emptyDragState.mode = 'draw'; }
+        else if(movedPx > ec()*1.4){ emptyDragState.mode = 'marquee'; }
+        else { return; }
+      } else {
+        if(movedPx > ec()*1.4){ emptyDragState.mode = 'marquee'; }
+        else { return; }
+      }
     }
 
     if(emptyDragState.mode === 'draw'){
@@ -1078,7 +1143,7 @@
       pushHistory();
       slots.push({
         id: nextId++, col:emptyDragState.pending.col, row:emptyDragState.pending.row, horizontal:emptyDragState.pending.horizontal,
-        borderColor: currentBorderColor, fillColor: null, label:'', labelRotation:0
+        kind:'slot', borderColor: currentBorderColor, fillColor: null, labelColor: '#f1f5f9', label:'', labelRotation:0
       });
       selectedIds = new Set();
       render();
@@ -1087,6 +1152,17 @@
       applySelectionClasses();
       statEl.textContent = slots.length + ' слот' + (selectedIds.size>1 ? ` · ${selectedIds.size} сонгогдсон` : '');
     } else if(emptyDragState.mode === 'undecided'){
+      if(activeDrawTool === 'warehouse'){
+        const { startCol:col, startRow:row } = emptyDragState;
+        if(isFreeSingleCell(col,row,null)){
+          pushHistory();
+          slots.push({
+            id: nextId++, col, row, horizontal:false, kind:'warehouse',
+            borderColor: currentBorderColor, fillColor: null, labelColor: '#f1f5f9', label:'', labelRotation:0
+          });
+          render();
+        }
+      }
       selectedIds = new Set();
       applySelectionClasses();
       statEl.textContent = slots.length + ' слот';
@@ -1463,10 +1539,10 @@
   // ---------------- export / import ----------------
   document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
     const data = {
-      cellSize: CELL, cols, rows, bgColor, labelFontFamily, labelFontSize,
+      cellSize: CELL, cols, rows, bgColor, labelFontFamily, labelFontSizeSlot, labelFontSizeWarehouse,
       slots: slots.map(s=>({
-        col:s.col, row:s.row, horizontal:s.horizontal,
-        borderColor:s.borderColor||null, fillColor:s.fillColor||null,
+        col:s.col, row:s.row, horizontal:s.horizontal, kind:s.kind||'slot',
+        borderColor:s.borderColor||null, fillColor:s.fillColor||null, labelColor:s.labelColor||'#f1f5f9',
         label:s.label||'', labelRotation:s.labelRotation||0
       })),
       texts: texts.map(t=>({
@@ -1489,12 +1565,12 @@
   document.getElementById('exportHtmlBtn').addEventListener('click', ()=>{
     const w = cols*CELL, h = rows*CELL;
     const divs = slots.map(s=>{
-      const sw = s.horizontal ? CELL*2 : CELL;
-      const sh = s.horizontal ? CELL : CELL*2;
+      const sw = s.kind==='warehouse' ? CELL : (s.horizontal ? CELL*2 : CELL);
+      const sh = s.kind==='warehouse' ? CELL : (s.horizontal ? CELL : CELL*2);
       const border = s.borderColor || '#3D5670';
       const fill = s.fillColor ? `background:${s.fillColor};` : '';
       const labelHtml = s.label
-        ? `<div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(${s.labelRotation||0}deg); font-family:${labelFontFamily}; font-size:${labelFontSize}px; color:#f1f5f9; text-shadow:0 0 3px rgba(0,0,0,.85); white-space:nowrap;">${s.label}</div>`
+        ? `<div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(${s.labelRotation||0}deg); font-family:${labelFontFamily}; font-size:${s.kind==='warehouse'?labelFontSizeWarehouse:labelFontSizeSlot}px; color:${s.labelColor||'#f1f5f9'}; text-shadow:0 0 3px rgba(0,0,0,.85); white-space:nowrap;">${s.label}</div>`
         : '';
       return `  <div class="slot" style="left:${s.col*CELL}px; top:${s.row*CELL}px; width:${sw}px; height:${sh}px;"><div class="slot-inner" style="border-color:${border}; ${fill}"></div>${labelHtml}</div>`;
     }).join('\n');
@@ -1542,15 +1618,16 @@ ${polySvgMarkup}
         CELL = (+parsed.cellSize) || CELL;
         bgColor = parsed.bgColor || bgColor;
         labelFontFamily = parsed.labelFontFamily || labelFontFamily;
-        labelFontSize = (+parsed.labelFontSize) || labelFontSize;
+        labelFontSizeSlot = (+parsed.labelFontSizeSlot) || labelFontSizeSlot;
+        labelFontSizeWarehouse = (+parsed.labelFontSizeWarehouse) || labelFontSizeWarehouse;
         bgColorInput.value = bgColor;
         cellSizeInput.value = CELL;
         labelFontSelect.value = labelFontFamily;
-        labelFontSizeInput.value = labelFontSize;
+        labelFontSizeInput.value = activeDrawTool==='warehouse' ? labelFontSizeWarehouse : labelFontSizeSlot;
         gridEl.style.backgroundColor = bgColor;
         slots = parsed.slots.map(s => ({
-          id: nextId++, col:+s.col, row:+s.row, horizontal:!!s.horizontal,
-          borderColor: s.borderColor || '#e2e8f0', fillColor: s.fillColor || null,
+          id: nextId++, col:+s.col, row:+s.row, horizontal:!!s.horizontal, kind: s.kind==='warehouse' ? 'warehouse' : 'slot',
+          borderColor: s.borderColor || '#e2e8f0', fillColor: s.fillColor || null, labelColor: s.labelColor || '#f1f5f9',
           label: s.label || '', labelRotation: [0,90,180,270].includes(+s.labelRotation) ? +s.labelRotation : 0
         }));
         texts = Array.isArray(parsed.texts) ? parsed.texts.map(t => ({
