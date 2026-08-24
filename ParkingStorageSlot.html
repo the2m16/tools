@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Parking slot constructor</title>
+<title>Зогсоолын грид конструктор</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -33,6 +33,14 @@
   .btn.active{ background:var(--cyan); border-color:var(--cyan); color:#08221E; font-weight:600; }
   .btn.active:hover{ color:#08221E; }
   .tool-row{ display:flex; gap:8px; width:100%; align-items:stretch; }
+  .collapse-btn{ width:38px; height:auto; border-radius:8px; border:1px solid var(--line-bright); background:var(--bg);
+    color:var(--text-hi); cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .collapse-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .collapse-btn.collapsed{ transform:rotate(180deg); }
+  #controlsCollapsible{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; width:100%;
+    max-height:600px; overflow:hidden; opacity:1; transition:max-height .25s ease, opacity .2s ease; }
+  #controlsCollapsible.collapsed{ max-height:0; opacity:0; pointer-events:none; }
+  .controls.collapsed{ gap:0; }
   .tool-switch{ display:flex; gap:0; flex:1; border:1px solid var(--line-bright); border-radius:8px; overflow:hidden; }
   .tool-btn{ flex:1; font-size:12.5px; padding:10px; border:none; background:var(--bg); color:var(--text-lo); cursor:pointer; border-right:1px solid var(--line-bright); }
   .tool-btn:last-child{ border-right:none; }
@@ -41,7 +49,7 @@
   .tool-group{ display:contents; }
   input[type=file]{ display:none; }
 
-  .controls{ flex:0 0 auto; width:100%; margin:0 0 14px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  .controls{ flex:0 0 auto; width:100%; margin:0 0 14px; display:flex; flex-direction:column; gap:12px;
     background:var(--paper); border:1px solid var(--line-bright); border-radius:8px; padding:10px 14px; }
   .ctrl-field{ display:flex; align-items:center; gap:7px; }
   .ctrl-field label{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; }
@@ -245,48 +253,51 @@
       <button class="tool-btn" data-tool="polygon">Полигон зурах</button>
     </div>
     <button class="btn" id="addTextBtn">+ Текст нэмэх</button>
+    <button class="collapse-btn" id="collapseToggleBtn" title="Түүлбар хураах/дэлгэх">▾</button>
   </div>
-  <div class="ctrl-field">
-    <button class="btn" id="undoBtn" title="(Ctrl+Z)">↶ Undo</button>
-    <button class="btn" id="redoBtn" title="(Ctrl+Shift+Z)">↷ Redo</button>
-  </div>
-  <div id="slotToolGroup" class="tool-group">
-    <div class="ctrl-field"><label>Нүд хөндлөнгөөр</label><input id="colsInput" type="number" min="4"></div>
-    <div class="ctrl-field"><label>Нүд босоогоор</label><input id="rowsInput" type="number" min="4"></div>
-    <button class="btn" id="applySizeBtn">Хэмжээ тохируулах</button>
-    <div class="ctrl-field"><label>Нүдний талууд (px)</label><input id="cellSizeInput" type="number" min="8" max="80" value="20"></div>
-    <div class="ctrl-field"><label>Дэвсгэр өнгө</label><input id="bgColorInput" type="color" value="#101b29"></div>
-    <div class="ctrl-field"><label>Тор нуух</label><input id="hideGridCheckbox" type="checkbox"></div>
-    <div class="ctrl-field"><label>Хүрээний өнгө</label><div class="swatch-row" id="borderSwatches"></div></div>
+  <div id="controlsCollapsible">
     <div class="ctrl-field">
-      <label>Фонт</label>
-      <select id="labelFontSelect">
-        <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System UI</option>
-        <option value="'IBM Plex Mono', ui-monospace, monospace">IBM Plex Mono</option>
-        <option value="ui-monospace, 'SFMono-Regular', monospace">Monospace</option>
-        <option value="Arial, Helvetica, sans-serif">Arial</option>
-        <option value="Georgia, 'Times New Roman', serif">Serif</option>
-      </select>
+      <button class="btn" id="undoBtn" title="(Ctrl+Z)">↶ Undo</button>
+      <button class="btn" id="redoBtn" title="(Ctrl+Shift+Z)">↷ Redo</button>
     </div>
-    <div class="ctrl-field"><label id="labelFontSizeLabel">Зогсоолын фонт хэмжээ</label><input id="labelFontSizeInput" type="number" min="6" max="48" value="10"></div>
-  </div>
-  <div id="polyToolGroup" class="tool-group" style="display:none">
-    <div class="ctrl-field"><label>Полигон цэгийн зай (px)</label><input id="polyDotSpacingInput" type="number" min="4" max="200" value="20"></div>
-    <div class="ctrl-field"><label>Зураасны өргөн (px)</label><input id="polyStrokeWidthInput" type="number" min="1" max="20" value="2"></div>
-    <div class="ctrl-field"><label>Зураасны өнгө</label><div class="swatch-row" id="polyStrokeSwatches"></div></div>
-    <div class="ctrl-field"><label>Дүүргэлтийн өнгө</label><div class="swatch-row" id="polyFillSwatches"></div></div>
-  </div>
-  <div class="zoom-field">
-    <button id="zoomOut">−</button>
-    <span class="zlabel" id="zoomLabel">100%</span>
-    <button id="zoomIn">+</button>
-  </div>
-  <div class="stat" id="stat"></div>
-  <div class="hint">
-    Зогсоол: хоосон нүднээс зэргэлдээ нүд рүү чирж 2 нүд холбоход слот үүснэ (2:1) · Агуулах: хоосон нүд дээр дарахад 1 нүдэд слот үүснэ (1:1) ·
-    Слот дээр дарж чирвэл байрлал өөрчлөгдөнө, дарахад (чиргэлгүй) засах цонх нээгдэнэ · Hover хийж улаан × дарвал устана · Хулганаар олон слот сонгоод бөөнд нь зөөж болно ·
-    Хулганы scroll-оор zoom хийнэ · Фонт/хэмжээг глобал тохируулна ·
-    Полигон зурах горимд: цэгэн тор дээр дарж оройнуудаа байрлуулна, эхний цэг дээр дарах эсвэл Enter дарахад хаагдана, Backspace сүүлийн цэгийг арилгана, Escape цуцална · Зурахгүй үед полигоныг чирж байрлалыг өөрчилнө, дарахад засах цонх нээгдэж зураас/дүүргэлтийн өнгө, зузааныг тохируулж болно
+    <div id="slotToolGroup" class="tool-group">
+      <div class="ctrl-field"><label>Нүд хөндлөнгөөр</label><input id="colsInput" type="number" min="4"></div>
+      <div class="ctrl-field"><label>Нүд босоогоор</label><input id="rowsInput" type="number" min="4"></div>
+      <button class="btn" id="applySizeBtn">Хэмжээ тохируулах</button>
+      <div class="ctrl-field"><label>Нүдний талууд (px)</label><input id="cellSizeInput" type="number" min="8" max="80" value="20"></div>
+      <div class="ctrl-field"><label>Дэвсгэр өнгө</label><input id="bgColorInput" type="color" value="#101b29"></div>
+      <div class="ctrl-field"><label>Тор нуух</label><input id="hideGridCheckbox" type="checkbox"></div>
+      <div class="ctrl-field"><label>Хүрээний өнгө</label><div class="swatch-row" id="borderSwatches"></div></div>
+      <div class="ctrl-field">
+        <label>Фонт</label>
+        <select id="labelFontSelect">
+          <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System UI</option>
+          <option value="'IBM Plex Mono', ui-monospace, monospace">IBM Plex Mono</option>
+          <option value="ui-monospace, 'SFMono-Regular', monospace">Monospace</option>
+          <option value="Arial, Helvetica, sans-serif">Arial</option>
+          <option value="Georgia, 'Times New Roman', serif">Serif</option>
+        </select>
+      </div>
+      <div class="ctrl-field"><label id="labelFontSizeLabel">Зогсоолын фонт хэмжээ</label><input id="labelFontSizeInput" type="number" min="6" max="48" value="10"></div>
+    </div>
+    <div id="polyToolGroup" class="tool-group" style="display:none">
+      <div class="ctrl-field"><label>Полигон цэгийн зай (px)</label><input id="polyDotSpacingInput" type="number" min="4" max="200" value="20"></div>
+      <div class="ctrl-field"><label>Зураасны өргөн (px)</label><input id="polyStrokeWidthInput" type="number" min="1" max="20" value="2"></div>
+      <div class="ctrl-field"><label>Зураасны өнгө</label><div class="swatch-row" id="polyStrokeSwatches"></div></div>
+      <div class="ctrl-field"><label>Дүүргэлтийн өнгө</label><div class="swatch-row" id="polyFillSwatches"></div></div>
+    </div>
+    <div class="zoom-field">
+      <button id="zoomOut">−</button>
+      <span class="zlabel" id="zoomLabel">100%</span>
+      <button id="zoomIn">+</button>
+    </div>
+    <div class="stat" id="stat"></div>
+    <div class="hint">
+      Зогсоол: хоосон нүднээс зэргэлдээ нүд рүү чирж 2 нүд холбоход слот үүснэ (2:1) · Агуулах: хоосон нүд дээр дарахад 1 нүдэд слот үүснэ (1:1) ·
+      Слот дээр дарж чирвэл байрлал өөрчлөгдөнө, дарахад (чиргэлгүй) засах цонх нээгдэнэ · Hover хийж улаан × дарвал устана · Хулганаар олон слот сонгоод бөөнд нь зөөж болно ·
+      Хулганы scroll-оор zoom хийнэ · Фонт/хэмжээг глобал тохируулна ·
+      Полигон зурах горимд: цэгэн тор дээр дарж оройнуудаа байрлуулна, эхний цэг дээр дарах эсвэл Enter дарахад хаагдана, Backspace сүүлийн цэгийг арилгана, Escape цуцална · Зурахгүй үед полигоныг чирж байрлалыг өөрчилнө, дарахад засах цонх нээгдэж зураас/дүүргэлтийн өнгө, зузааныг тохируулж болно
+    </div>
   </div>
 </div>
 
@@ -383,6 +394,14 @@
   const labelFontSelect = document.getElementById('labelFontSelect');
   const labelFontSizeInput = document.getElementById('labelFontSizeInput');
   const undoBtn = document.getElementById('undoBtn');
+  const collapseToggleBtn = document.getElementById('collapseToggleBtn');
+  const controlsCollapsible = document.getElementById('controlsCollapsible');
+  const controlsEl = document.querySelector('.controls');
+  collapseToggleBtn.addEventListener('click', ()=>{
+    const collapsed = controlsCollapsible.classList.toggle('collapsed');
+    controlsEl.classList.toggle('collapsed', collapsed);
+    collapseToggleBtn.classList.toggle('collapsed', collapsed);
+  });
   const redoBtn = document.getElementById('redoBtn');
   const addTextBtn = document.getElementById('addTextBtn');
   const textModalOverlay = document.getElementById('textModalOverlay');
