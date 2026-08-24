@@ -33,6 +33,10 @@
   .btn.active{ background:var(--cyan); border-color:var(--cyan); color:#08221E; font-weight:600; }
   .btn.active:hover{ color:#08221E; }
   .tool-row{ display:flex; gap:8px; width:100%; align-items:stretch; }
+  .chev-sm{ width:24px; height:24px; border-radius:5px; border:1px solid var(--line-bright); background:var(--bg);
+    color:var(--text-hi); cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; padding:0; }
+  .chev-sm:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .nudge-pad{ display:flex; gap:4px; align-items:center; }
   .collapse-btn{ width:38px; height:auto; border-radius:8px; border:1px solid var(--line-bright); background:var(--bg);
     color:var(--text-hi); cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
   .collapse-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
@@ -279,6 +283,13 @@
         </select>
       </div>
       <div class="ctrl-field"><label id="labelFontSizeLabel">Зогсоолын фонт хэмжээ</label><input id="labelFontSizeInput" type="number" min="6" max="48" value="10"></div>
+      <div class="ctrl-field"><label>Сонгосон слот зөөх (px)</label><input id="nudgeStepInput" type="number" min="1" value="20"></div>
+      <div class="nudge-pad">
+        <button class="chev-sm" id="nudgeUp" title="Дээш">▲</button>
+        <button class="chev-sm" id="nudgeDown" title="Доош">▼</button>
+        <button class="chev-sm" id="nudgeLeft" title="Зүүн">◀</button>
+        <button class="chev-sm" id="nudgeRight" title="Баруун">▶</button>
+      </div>
     </div>
     <div id="polyToolGroup" class="tool-group" style="display:none">
       <div class="ctrl-field"><label>Полигон цэгийн зай (px)</label><input id="polyDotSpacingInput" type="number" min="4" max="200" value="20"></div>
@@ -394,6 +405,11 @@
   const labelFontSelect = document.getElementById('labelFontSelect');
   const labelFontSizeInput = document.getElementById('labelFontSizeInput');
   const undoBtn = document.getElementById('undoBtn');
+  const nudgeStepInput = document.getElementById('nudgeStepInput');
+  const nudgeUp = document.getElementById('nudgeUp');
+  const nudgeDown = document.getElementById('nudgeDown');
+  const nudgeLeft = document.getElementById('nudgeLeft');
+  const nudgeRight = document.getElementById('nudgeRight');
   const collapseToggleBtn = document.getElementById('collapseToggleBtn');
   const controlsCollapsible = document.getElementById('controlsCollapsible');
   const controlsEl = document.querySelector('.controls');
@@ -592,6 +608,26 @@
     return true;
   }
 
+  function nudgeSelectedSlots(dxPx, dyPx){
+    if(selectedIds.size===0) return;
+    pushHistory();
+    slots.forEach(s=>{
+      if(!selectedIds.has(s.id)) return;
+      s.ox = (s.ox||0) + dxPx;
+      s.oy = (s.oy||0) + dyPx;
+    });
+    render();
+  }
+  function nudgeStepPx(){
+    return Math.max(1, (+nudgeStepInput.value) || 1);
+  }
+  nudgeUp.addEventListener('click', ()=> nudgeSelectedSlots(0, -nudgeStepPx()));
+  nudgeDown.addEventListener('click', ()=> nudgeSelectedSlots(0, nudgeStepPx()));
+  nudgeLeft.addEventListener('click', ()=> nudgeSelectedSlots(-nudgeStepPx(), 0));
+  nudgeRight.addEventListener('click', ()=> nudgeSelectedSlots(nudgeStepPx(), 0));
+  nudgeStepInput.addEventListener('focus', beginEdit);
+  nudgeStepInput.addEventListener('blur', commitEdit);
+
   function sizeGrid(){
     gridEl.style.width = (cols*ec()) + 'px';
     gridEl.style.height = (rows*ec()) + 'px';
@@ -622,8 +658,8 @@
       const el = document.createElement('div');
       el.className = 'slot' + (selectedIds.has(s.id) ? ' selected' : '');
       el.dataset.id = s.id;
-      el.style.left = (s.col*ec()) + 'px';
-      el.style.top = (s.row*ec()) + 'px';
+      el.style.left = (s.col*ec() + (s.ox||0)*zoom) + 'px';
+      el.style.top = (s.row*ec() + (s.oy||0)*zoom) + 'px';
       el.style.width = (s.kind==='warehouse' ? ec() : (s.horizontal ? ec()*2 : ec())) + 'px';
       el.style.height = (s.kind==='warehouse' ? ec() : (s.horizontal ? ec() : ec()*2)) + 'px';
       const inner = document.createElement('div');
@@ -1266,7 +1302,7 @@
         pushHistory();
         moveState.candidates.forEach(c=>{
           const s = slots.find(x=>x.id===c.id);
-          if(s){ s.col=c.col; s.row=c.row; }
+          if(s){ s.col=c.col; s.row=c.row; s.ox=0; s.oy=0; }
         });
       }
     }
@@ -1687,7 +1723,7 @@
     const data = {
       cellSize: CELL, cols, rows, bgColor, labelFontFamily, labelFontSizeSlot, labelFontSizeWarehouse,
       slots: slots.map(s=>({
-        col:s.col, row:s.row, horizontal:s.horizontal, kind:s.kind||'slot',
+        col:s.col, row:s.row, horizontal:s.horizontal, kind:s.kind||'slot', ox:s.ox||0, oy:s.oy||0,
         borderColor:s.borderColor||null, fillColor:s.fillColor||null, labelColor:s.labelColor||'#f1f5f9',
         label:s.label||'', labelRotation:s.labelRotation||0
       })),
@@ -1718,7 +1754,7 @@
       const labelHtml = s.label
         ? `<div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(${s.labelRotation||0}deg); font-family:${labelFontFamily}; font-size:${s.kind==='warehouse'?labelFontSizeWarehouse:labelFontSizeSlot}px; color:${s.labelColor||'#f1f5f9'}; text-shadow:0 0 3px rgba(0,0,0,.85); white-space:nowrap;">${s.label}</div>`
         : '';
-      return `  <div class="slot" style="left:${s.col*CELL}px; top:${s.row*CELL}px; width:${sw}px; height:${sh}px;"><div class="slot-inner" style="border-color:${border}; ${fill}"></div>${labelHtml}</div>`;
+      return `  <div class="slot" style="left:${s.col*CELL+(s.ox||0)}px; top:${s.row*CELL+(s.oy||0)}px; width:${sw}px; height:${sh}px;"><div class="slot-inner" style="border-color:${border}; ${fill}"></div>${labelHtml}</div>`;
     }).join('\n');
     const textDivs = texts.map(t=>
       `  <div style="position:absolute; left:${t.x}px; top:${t.y}px; transform:translate(-50%,-50%) rotate(${t.rotation||0}deg); font-family:${t.fontFamily||LABEL_FONT}; font-size:${t.fontSize||16}px; font-weight:${t.bold?700:400}; color:${t.color||'#f1f5f9'}; text-shadow:0 0 3px rgba(0,0,0,.6); white-space:nowrap;">${t.text||''}</div>`
@@ -1773,6 +1809,7 @@ ${polySvgMarkup}
         gridEl.style.backgroundColor = bgColor;
         slots = parsed.slots.map(s => ({
           id: nextId++, col:+s.col, row:+s.row, horizontal:!!s.horizontal, kind: s.kind==='warehouse' ? 'warehouse' : 'slot',
+          ox:+s.ox||0, oy:+s.oy||0,
           borderColor: s.borderColor || '#e2e8f0', fillColor: s.fillColor || null, labelColor: s.labelColor || '#f1f5f9',
           label: s.label || '', labelRotation: [0,90,180,270].includes(+s.labelRotation) ? +s.labelRotation : 0
         }));
